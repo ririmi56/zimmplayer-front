@@ -8,6 +8,31 @@ dépôt sœur [`zimmplayer-back`](https://github.com/ririmi56/zimmplayer-back).
 React + TanStack Query + Zustand + Tailwind, servi statique (aucun rendu
 serveur).
 
+## Image Docker
+
+Publiée sur GHCR à chaque push sur `master` (voir
+[`.github/workflows/docker.yml`](./.github/workflows/docker.yml)), en
+`linux/amd64` et `linux/arm64` :
+
+```bash
+docker pull ghcr.io/ririmi56/zimmplayer-front:latest
+```
+
+| Tag | Correspond à |
+|---|---|
+| `latest` | dernier commit sur `master` |
+| `X.Y.Z`, `X.Y` | tag Git `vX.Y.Z` |
+| `<sha court>` | un commit précis, pour figer ou revenir en arrière |
+
+Le conteneur sert le bundle statique et fait office de reverse proxy unique
+(`/`, `/api`, `/s3`) via nginx (`nginx.conf`, écoute sur `:80`) — il n'a pas de
+build à faire à l'exécution, aucune variable d'environnement à lui passer.
+
+**Attention** : `nginx.conf` proxifie vers les noms d'hôte **`api`** et
+**`minio`** — il faut donc soit lancer ce conteneur sur le même réseau Docker
+qu'eux avec exactement ces noms de service (cas normal en `docker compose`),
+soit monter son propre `nginx.conf` par-dessus si l'API et MinIO sont ailleurs.
+
 ## Développement
 
 Nécessite l'API (`zimmplayer-back`) démarrée sur `localhost:8000`.
