@@ -1,5 +1,7 @@
 # Zimmplayer — Front
 
+[![Docker](https://github.com/ririmi56/zimmplayer-front/actions/workflows/docker.yml/badge.svg)](https://github.com/ririmi56/zimmplayer-front/actions/workflows/docker.yml)
+
 Client web d'un lecteur de musique auto-hébergé pour une bibliothèque stockée
 sur S3/MinIO, conçu pour fonctionner sur un **réseau airgap** : aucune
 dépendance réseau externe dans le bundle. L'API correspondante vit dans le
@@ -25,13 +27,27 @@ docker pull ghcr.io/ririmi56/zimmplayer-front:latest
 | `<sha court>` | un commit précis, pour figer ou revenir en arrière |
 
 Le conteneur sert le bundle statique et fait office de reverse proxy unique
-(`/`, `/api`, `/s3`) via nginx (`nginx.conf`, écoute sur `:80`) — il n'a pas de
-build à faire à l'exécution, aucune variable d'environnement à lui passer.
+(`/`, `/api`, `/s3`) via nginx, sur `:80`. Où proxifier `/api` et `/s3` se
+règle par variable d'environnement, substituée dans la configuration au
+démarrage (`nginx.conf.template`, mécanisme `envsubst` intégré à l'image nginx
+officielle — rien de fait main) :
 
-**Attention** : `nginx.conf` proxifie vers les noms d'hôte **`api`** et
-**`minio`** — il faut donc soit lancer ce conteneur sur le même réseau Docker
-qu'eux avec exactement ces noms de service (cas normal en `docker compose`),
-soit monter son propre `nginx.conf` par-dessus si l'API et MinIO sont ailleurs.
+| Variable | Défaut | Rôle |
+|---|---|---|
+| `API_UPSTREAM` | `http://api:8000` | Cible de `/api/*` |
+| `MINIO_UPSTREAM` | `http://minio:9000` | Cible de `/s3/*` |
+
+Les défauts correspondent aux noms de service attendus par le
+`docker-compose.yml` du dépôt principal — un simple `docker compose up`
+fonctionne donc sans rien configurer. Si l'API ou MinIO vivent ailleurs (autre
+réseau, autre machine), les surcharger :
+
+```bash
+docker run -p 80:80 \
+  -e API_UPSTREAM=http://mon-api:8000 \
+  -e MINIO_UPSTREAM=http://mon-minio:9000 \
+  ghcr.io/ririmi56/zimmplayer-front:latest
+```
 
 ## Développement
 
