@@ -5,7 +5,9 @@
 Client web d'un lecteur de musique auto-hébergé pour une bibliothèque stockée
 sur S3/MinIO, conçu pour fonctionner sur un **réseau airgap** : aucune
 dépendance réseau externe dans le bundle. L'API correspondante vit dans le
-dépôt sœur [`zimmplayer-back`](https://github.com/ririmi56/zimmplayer-back).
+dépôt sœur [`zimmplayer-back`](https://github.com/ririmi56/zimmplayer-back) ;
+l'orchestration Docker Compose et le livrable airgap, dans
+[`zimmplayer-deploy`](https://github.com/ririmi56/zimmplayer-deploy).
 
 React + TanStack Query + Zustand + Tailwind, servi statique (aucun rendu
 serveur).
