@@ -1,0 +1,28 @@
+@import 'tailwindcss';
+
+/* Reseau airgap : aucune police distante. On s'appuie uniquement sur la pile
+   systeme, deja presente sur tous les postes. */
+@theme {
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-neutral-900);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-700);
+  border-radius: 5px;
+}
