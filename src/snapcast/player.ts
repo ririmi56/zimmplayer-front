@@ -12,6 +12,22 @@ import { decodeInterleaved, parseWaveHeader, type PcmFormat } from './pcm'
  * Un morceau arrivé trop tard est jeté plutôt que joué en retard : mieux vaut
  * un micro-trou qu'un décalage qui s'installe.
  */
+
+/**
+ * Écart toléré entre l'horloge de l'AudioContext et l'horloge locale avant de
+ * recaler l'ancrage.
+ *
+ * Les deux horloges sont pilotées par des quartz différents — celui de la carte
+ * son pour l'une, celui du système pour l'autre — et s'écartent donc lentement,
+ * de quelques millisecondes par dizaine de minutes. Sans recalage, l'écart
+ * grandit indéfiniment : c'est la dérive constatée sur une longue écoute.
+ *
+ * 15 ms : au-dessus du bruit de mesure (`currentTime` avance par blocs de
+ * rendu, ~2,7 ms à 48 kHz) et en dessous du seuil où un décalage entre pièces
+ * s'entend.
+ */
+const MAX_ANCHOR_DRIFT_MS = 15
+
 export class SnapPlayer {
   private context: AudioContext | null = null
   private gain: GainNode | null = null
@@ -24,6 +40,7 @@ export class SnapPlayer {
 
   private lateChunks = 0
   private playedChunks = 0
+  private resyncs = 0
 
   private readonly clock: ServerClock
   private bufferMs: number
@@ -39,8 +56,24 @@ export class SnapPlayer {
     return this.context !== null && this.context.state === 'running'
   }
 
-  get stats(): { played: number; late: number } {
-    return { played: this.playedChunks, late: this.lateChunks }
+  get stats(): { played: number; late: number; resyncs: number; driftMs: number } {
+    return {
+      played: this.playedChunks,
+      late: this.lateChunks,
+      resyncs: this.resyncs,
+      driftMs: this.anchorDriftMs,
+    }
+  }
+
+  /**
+   * Écart courant entre les deux horloges, en millisecondes : ce que l'ancrage
+   * prédit pour maintenant, moins l'heure réelle de l'AudioContext. Positif =
+   * l'AudioContext prend du retard sur l'horloge locale.
+   */
+  get anchorDriftMs(): number {
+    if (!this.context) return 0
+    const nowLocalMs = performance.timeOrigin + performance.now()
+    return (this.toContextTime(nowLocalMs) - this.context.currentTime) * 1000
   }
 
   /** Doit être appelé depuis un geste utilisateur : politique d'autoplay. */
@@ -100,9 +133,49 @@ export class SnapPlayer {
     return this.anchorContextTime + (localMs - this.anchorLocalMs) / 1000
   }
 
+  /**
+   * Recale l'ancrage quand les deux horloges ont trop divergé. Appelé à chaque
+   * morceau : la mesure ne coûte que deux lectures d'horloge.
+   *
+   * La correction est un saut, non un glissement : le morceau suivant est
+   * programmé jusqu'à 15 ms plus tôt ou plus tard que le précédent ne se
+   * termine, ce qui produit un très bref chevauchement ou trou. C'est le prix
+   * assumé — rare, puisque la dérive met des minutes à atteindre le seuil, et
+   * bien préférable à un décalage qui s'installe pour de bon. `resyncs` compte
+   * ces corrections, pour qu'une dérive anormale se voie.
+   */
+  private correctDrift(): void {
+    if (Math.abs(this.anchorDriftMs) < MAX_ANCHOR_DRIFT_MS) return
+    this.reanchor()
+    this.resyncs++
+  }
+
+  /**
+   * Resynchronisation forcée : jette ce qui est déjà programmé et repart de
+   * l'instant présent. Contrairement au recalage automatique, coupe le son le
+   * temps que le tampon se reconstitue — à réserver au cas où la lecture est
+   * visiblement décalée.
+   */
+  resync(): void {
+    for (const node of this.scheduled) {
+      try {
+        node.stop()
+      } catch {
+        // déjà terminé
+      }
+    }
+    this.scheduled.clear()
+    this.reanchor()
+    this.resyncs++
+  }
+
   /** Programme un morceau. Renvoie false s'il est arrivé trop tard. */
   enqueue(payload: Uint8Array, timestampServerMs: number): boolean {
     if (!this.context || !this.gain || !this.format) return false
+
+    // Avant de convertir : un ancrage périmé placerait ce morceau au mauvais
+    // instant, et le ferait même juger « en retard » à tort.
+    this.correctDrift()
 
     const playAtServerMs = timestampServerMs + this.bufferMs - this.latencyMs
     const playAtContextTime = this.toContextTime(this.clock.toLocalMs(playAtServerMs))

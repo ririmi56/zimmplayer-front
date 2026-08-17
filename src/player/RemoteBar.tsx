@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Cover } from '../components/Cover'
 import { formatDuration } from '../components/format'
-import { useSnapclient } from '../snapcast/useSnapclient'
 import { useCurrentSession, useSessionControl } from '../state/session'
 import { ICONS, Icon } from './icons'
+import { SnapVolume } from './SnapVolume'
 
 /**
  * Barre de lecture en mode Snapcast.
@@ -27,9 +27,7 @@ export function RemoteBar({
 }) {
   const { data: session } = useCurrentSession()
   const control = useSessionControl()
-  const snap = useSnapclient()
   const [drift, setDrift] = useState(0)
-  const [volume, setVolume] = useState(1)
 
   const serverPosition = session?.position_s ?? 0
   const isPlaying = session?.is_playing ?? false
@@ -148,34 +146,7 @@ export function RemoteBar({
         >
           <Icon path={ICONS.lyrics} />
         </button>
-        <label
-          className="flex items-center gap-2 text-xs text-neutral-300"
-          title="Jouer le flux sur ce navigateur, synchronisé avec les enceintes"
-        >
-          <input
-            type="checkbox"
-            checked={snap.listening}
-            onChange={() => (snap.listening ? snap.mute() : snap.listen())}
-            className="h-4 w-4 accent-emerald-500"
-          />
-          Écouter ici
-        </label>
-        {snap.listening && (
-          <input
-            type="range"
-            min={0}
-            max={1}
-            step={0.01}
-            value={volume}
-            onChange={(e) => {
-              const next = Number(e.target.value)
-              setVolume(next)
-              snap.setVolume(next, false)
-            }}
-            aria-label="Volume de ce navigateur"
-            className="h-1 w-24 cursor-pointer appearance-none rounded bg-neutral-700 accent-emerald-400"
-          />
-        )}
+        <SnapVolume />
       </div>
     </footer>
   )

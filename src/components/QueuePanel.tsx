@@ -1,11 +1,17 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { ICONS, Icon } from '../player/icons'
 import { Cover } from './Cover'
 import { formatDuration } from './format'
+import { dropTarget } from './queueOrder'
 import { useCurrentSession, useSessionControl } from '../state/session'
 
 export function QueuePanel({ onClose }: { onClose: () => void }) {
   const { data: session, isLoading } = useCurrentSession()
   const control = useSessionControl()
+  const [dragId, setDragId] = useState<number | null>(null)
+  /** Rang d'insertion visé, entre 0 et le nombre de titres. */
+  const [dropIndex, setDropIndex] = useState<number | null>(null)
 
   if (control.sessionId == null) {
     return (
@@ -29,6 +35,25 @@ export function QueuePanel({ onClose }: { onClose: () => void }) {
     )
   }
 
+  const currentIndex =
+    session.current_item_id != null
+      ? session.items.findIndex((i) => i.id === session.current_item_id)
+      : -1
+
+  const cancelDrop = () => {
+    setDragId(null)
+    setDropIndex(null)
+  }
+
+  const commitDrop = () => {
+    const from = session.items.findIndex((i) => i.id === dragId)
+    if (dragId != null && from >= 0 && dropIndex != null) {
+      const to = dropTarget(from, dropIndex)
+      if (to != null) control.move(dragId, to)
+    }
+    cancelDrop()
+  }
+
   return (
     <Panel onClose={onClose} title={session.name}>
       <div className="mb-3 flex items-center justify-between text-xs text-neutral-500">
@@ -47,15 +72,48 @@ export function QueuePanel({ onClose }: { onClose: () => void }) {
           File vide. Utilisez « Ajouter à la file » depuis un album ou un titre.
         </p>
       ) : (
-        <ol className="space-y-1">
+        <ol>
           {session.items.map((item, index) => {
             const current = item.id === session.current_item_id
+            // La file est une playlist ordonnée avec un pointeur : ce qui
+            // précède le titre courant a donc déjà été joué. Grisé, pas retiré
+            // — c'est ce qui donne le retour arrière et la relecture.
+            const played = currentIndex >= 0 && index < currentIndex
+            const dragged = item.id === dragId
             return (
               <li
                 key={item.id}
-                className={`group flex items-center gap-2 rounded px-2 py-1.5 ${
-                  current ? 'bg-neutral-800/60' : 'hover:bg-neutral-800/30'
-                }`}
+                draggable
+                onDragStart={(e) => {
+                  setDragId(item.id)
+                  e.dataTransfer.effectAllowed = 'move'
+                }}
+                onDragOver={(e) => {
+                  if (dragId == null) return
+                  e.preventDefault()
+                  e.dataTransfer.dropEffect = 'move'
+                  // Moitié haute : on insère avant ; moitié basse : après.
+                  const box = e.currentTarget.getBoundingClientRect()
+                  const after = e.clientY - box.top > box.height / 2
+                  setDropIndex(after ? index + 1 : index)
+                }}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  commitDrop()
+                }}
+                onDragEnd={cancelDrop}
+                className={[
+                  'group flex items-center gap-2 rounded border-y-2 px-2 py-1.5',
+                  // Repère d'insertion. Les bordures existent toujours, en
+                  // transparent : le trait apparaît sans décaler la liste.
+                  dropIndex === index ? 'border-t-sky-400' : 'border-t-transparent',
+                  dropIndex === session.items.length && index === session.items.length - 1
+                    ? 'border-b-sky-400'
+                    : 'border-b-transparent',
+                  dragged ? 'opacity-40' : '',
+                  current ? 'bg-neutral-800/60' : 'hover:bg-neutral-800/30',
+                  played && !current ? 'opacity-50' : '',
+                ].join(' ')}
               >
                 <button
                   onClick={() => control.playItem(item.id)}
@@ -72,7 +130,11 @@ export function QueuePanel({ onClose }: { onClose: () => void }) {
                 <div className="min-w-0 flex-1">
                   <div
                     className={`truncate text-sm ${
-                      current ? 'text-emerald-400' : 'text-neutral-100'
+                      current
+                        ? 'text-emerald-400'
+                        : played
+                          ? 'text-neutral-500'
+                          : 'text-neutral-100'
                     }`}
                   >
                     {item.track.title}
@@ -86,22 +148,28 @@ export function QueuePanel({ onClose }: { onClose: () => void }) {
                   {formatDuration(item.track.duration_s)}
                 </span>
 
-                <div className="flex shrink-0 gap-1 opacity-0 group-hover:opacity-100">
+                <div className="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100">
+                  {/*
+                    Le glisser-déposer natif est inaccessible au clavier : cette
+                    poignée le double par les flèches haut/bas, ce que faisaient
+                    les deux boutons qu'elle remplace.
+                  */}
                   <button
-                    onClick={() => control.move(item.id, Math.max(0, index - 1))}
-                    disabled={index === 0}
-                    title="Monter"
-                    className="text-neutral-500 hover:text-neutral-200 disabled:opacity-30"
+                    title="Déplacer (glisser, ou flèches haut et bas)"
+                    aria-label={`Déplacer ${item.track.title}`}
+                    onKeyDown={(e) => {
+                      if (e.key === 'ArrowUp' && index > 0) {
+                        e.preventDefault()
+                        control.move(item.id, index - 1)
+                      }
+                      if (e.key === 'ArrowDown' && index < session.items.length - 1) {
+                        e.preventDefault()
+                        control.move(item.id, index + 1)
+                      }
+                    }}
+                    className="cursor-grab text-neutral-600 hover:text-neutral-200"
                   >
-                    ↑
-                  </button>
-                  <button
-                    onClick={() => control.move(item.id, index + 1)}
-                    disabled={index === session.items.length - 1}
-                    title="Descendre"
-                    className="text-neutral-500 hover:text-neutral-200 disabled:opacity-30"
-                  >
-                    ↓
+                    <Icon path={ICONS.dragHandle} className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => control.remove(item.id)}

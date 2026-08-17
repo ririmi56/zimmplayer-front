@@ -15,8 +15,7 @@ export type QueueItem = components['schemas']['QueueItemOut']
 
 export type SnapcastConfig = {
   host: string
-  port: number
-  /** Port HTTP/WebSocket, par lequel le navigateur recoit l'audio. */
+  /** Port HTTP/WebSocket de snapserver : controle JSON-RPC et audio. */
   http_port: number
   enabled: boolean
   advertise_host: string
@@ -91,14 +90,30 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  artists: (q?: string) =>
-    request<Page<Artist>>(`/api/artists${q ? `?q=${encodeURIComponent(q)}` : ''}`),
+  artists: (params: { q?: string; limit?: number; offset?: number } = {}) => {
+    const search = new URLSearchParams()
+    if (params.q) search.set('q', params.q)
+    if (params.limit != null) search.set('limit', String(params.limit))
+    if (params.offset) search.set('offset', String(params.offset))
+    return request<Page<Artist>>(`/api/artists?${search}`)
+  },
   artist: (id: number) => request<ArtistDetail>(`/api/artists/${id}`),
-  albums: (params: { q?: string; artistId?: number; genre?: string } = {}) => {
+  albums: (
+    params: {
+      q?: string
+      artistId?: number
+      genre?: string
+      /** Defaut du serveur : 100, plafonne a 500. */
+      limit?: number
+      offset?: number
+    } = {},
+  ) => {
     const search = new URLSearchParams()
     if (params.q) search.set('q', params.q)
     if (params.artistId) search.set('artist_id', String(params.artistId))
     if (params.genre) search.set('genre', params.genre)
+    if (params.limit != null) search.set('limit', String(params.limit))
+    if (params.offset) search.set('offset', String(params.offset))
     return request<Page<Album>>(`/api/albums?${search}`)
   },
   genres: () => request<Genre[]>('/api/genres'),

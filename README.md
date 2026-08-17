@@ -98,6 +98,41 @@ Trois choix qui simplifient beaucoup :
   décalage d'horloge lissé par une **médiane** insensible aux valeurs
   aberrantes. Un morceau arrivé trop tard est jeté plutôt que joué en retard.
 
+### Deux horloges, deux dérives
+
+Le navigateur en compare **deux paires** d'horloges, et les traite différemment :
+
+| Écart | Entre quoi | Correction |
+|---|---|---|
+| Décalage serveur | horloge de snapserver ↔ horloge locale | mesuré en continu par les messages `Time`, médiane glissante |
+| Dérive d'ancrage | horloge locale ↔ horloge de l'`AudioContext` | recalage automatique au-delà de 15 ms |
+
+La seconde est celle qu'on oublie : `AudioContext.currentTime` est cadencé par
+le quartz de la carte son, `performance.now()` par celui du système. Ils
+s'écartent de quelques millisecondes par dizaine de minutes — sur une longue
+écoute, le navigateur finit décalé des enceintes sans qu'aucune mesure réseau
+ne bouge. L'ancrage est donc revérifié à chaque morceau et recalé au-delà du
+seuil (`snapcast/player.ts`).
+
+Le recalage est un **saut**, pas un glissement : le morceau suivant est
+programmé jusqu'à 15 ms plus tôt ou plus tard, d'où un très bref chevauchement
+ou trou. C'est rare — la dérive met des minutes à atteindre le seuil — et
+préférable à un décalage définitif.
+
+Le bouton **« Resynchroniser »** de l'écran Configuration va plus loin : il jette
+aussi l'estimation du décalage serveur et la reconstruit au rythme rapide du
+démarrage (~1,5 s de silence). Utile après une mise en veille ou un changement
+de réseau, quand c'est l'estimation elle-même qui est fausse.
+
+Le même écran affiche les deux écarts, les morceaux joués et en retard, et le
+nombre de recalages — de quoi voir une dérive anormale plutôt que de la
+deviner.
+
+**Les enceintes physiques ne sont pas concernées** : elles se recalent seules,
+et l'API de snapserver n'offre aucun moyen de les y forcer (`Client.Resync` et
+consorts n'existent pas, vérifié contre un snapserver 0.29), ni aucune mesure
+de leur synchronisation.
+
 L'ouverture du son exige un **geste utilisateur** (politique d'autoplay des
 navigateurs) : rejoindre une session déclenche déjà cette écoute dans le même
 clic ; si le navigateur la bloque quand même, un second clic reste proposé.

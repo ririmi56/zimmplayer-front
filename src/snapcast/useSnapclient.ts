@@ -12,6 +12,8 @@ const IDLE: SnapStatus = {
   samples: 0,
   played: 0,
   late: 0,
+  driftMs: 0,
+  resyncs: 0,
 }
 
 /** URL du relais, sur la même origine que l'application. */
@@ -130,6 +132,10 @@ export function useSnapclient() {
     useSnapclientStore.getState().client?.setVolume(volume, muted)
   }, [])
 
+  const resync = useCallback(() => {
+    useSnapclientStore.getState().client?.resync()
+  }, [])
+
   return {
     available,
     listening,
@@ -139,5 +145,6 @@ export function useSnapclient() {
     listen,
     mute,
     setVolume,
+    resync,
   }
 }
