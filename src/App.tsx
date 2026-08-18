@@ -6,6 +6,7 @@ import { LyricsPanel } from './player/LyricsPanel'
 import { useMediaSession } from './player/mediaSession'
 import { PlayerBar } from './player/PlayerBar'
 import { RemoteBar } from './player/RemoteBar'
+import { SessionPresence } from './player/SessionPresence'
 import { Admin } from './routes/Admin'
 import { Album } from './routes/Album'
 import { Artist } from './routes/Artist'
@@ -161,6 +162,9 @@ export default function App() {
       {/* Monte une seule fois, hors des routes : la lecture survit à la
           navigation. Retire en session, ou le son sortirait deux fois. */}
       {!remote && <AudioEngine />}
+      {/* En session, ce navigateur ne joue aucun <audio> : sans cet element
+          silencieux, Chrome ne voit aucun media et n'affiche aucun controle. */}
+      {remote && <SessionPresence />}
     </div>
   )
 }
