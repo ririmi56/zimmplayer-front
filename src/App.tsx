@@ -11,16 +11,25 @@ import { Artist } from './routes/Artist'
 import { Artists } from './routes/Artists'
 import { Genres } from './routes/Genres'
 import { Library } from './routes/Library'
+import { NowPlaying } from './routes/NowPlaying'
 import { Search } from './routes/Search'
 import { Sessions } from './routes/Sessions'
 import { Settings } from './routes/Settings'
 import { useIdentity } from './state/identity'
 import { useCurrentSession } from './state/session'
 
-const NAV = [
-  { to: '/', label: 'Bibliothèque' },
-  { to: '/artists', label: 'Artistes' },
-  { to: '/genres', label: 'Genres' },
+/**
+ * Navigation en trois blocs : ce qui joue, ce qu'on parcourt, le reste.
+ *
+ * « Bibliothèque » est un intitulé de section et non un lien : il n'a rien à
+ * montrer que ses trois entrées ne montrent déjà, et un lien de plus vers la
+ * page Albums ne ferait que dédoubler la destination.
+ */
+const NAV: { to: string; label: string; section?: string }[] = [
+  { to: '/lecture', label: 'Lecture' },
+  { to: '/', label: 'Albums', section: 'Bibliothèque' },
+  { to: '/artists', label: 'Artistes', section: 'Bibliothèque' },
+  { to: '/genres', label: 'Genres', section: 'Bibliothèque' },
   { to: '/sessions', label: "Sessions d'écoute" },
   { to: '/settings', label: 'Configuration' },
   { to: '/admin', label: 'Administration' },
@@ -89,21 +98,27 @@ export default function App() {
       <div className="flex min-h-0 flex-1">
         <nav className="flex w-56 shrink-0 flex-col gap-1 border-r border-neutral-800 bg-neutral-950 p-4">
           <div className="mb-6 px-2 text-lg font-semibold text-neutral-100">Zimmplayer</div>
-          {NAV.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/'}
-              className={({ isActive }) =>
-                `rounded px-3 py-2 text-sm ${
-                  isActive
-                    ? 'bg-neutral-800 text-neutral-100'
-                    : 'text-neutral-400 hover:text-neutral-100'
-                }`
-              }
-            >
-              {item.label}
-            </NavLink>
+          {NAV.map((item, position) => (
+            <div key={item.to}>
+              {item.section && item.section !== NAV[position - 1]?.section && (
+                <div className="mb-1 mt-4 px-3 text-xs font-medium uppercase tracking-wide text-neutral-500">
+                  {item.section}
+                </div>
+              )}
+              <NavLink
+                to={item.to}
+                end={item.to === '/'}
+                className={({ isActive }) =>
+                  `block rounded py-2 text-sm ${item.section ? 'pl-6 pr-3' : 'px-3'} ${
+                    isActive
+                      ? 'bg-neutral-800 text-neutral-100'
+                      : 'text-neutral-400 hover:text-neutral-100'
+                  }`
+                }
+              >
+                {item.label}
+              </NavLink>
+            </div>
           ))}
           <div className="mt-auto px-2 text-xs text-neutral-600">
             {name ? `Connecté en tant que ${name}` : 'Pseudo non défini'}
@@ -120,6 +135,7 @@ export default function App() {
           <div className="px-8 py-6">
             <Routes>
               <Route path="/" element={<Library />} />
+              <Route path="/lecture" element={<NowPlaying />} />
               <Route path="/artists" element={<Artists />} />
               <Route path="/artists/:id" element={<Artist />} />
               <Route path="/albums/:id" element={<Album />} />
