@@ -49,6 +49,7 @@ export type SnapRawResult = {
   server: { groups: { id: string; stream_id: string | null; clients: { id: string }[] }[] }
 }
 export type ScanError = components['schemas']['ScanErrorOut']
+export type AuthStatus = components['schemas']['AuthStatus']
 export type Page<T> = { items: T[]; total: number; limit: number; offset: number }
 
 /** Pseudo courant, lu au moment de l'appel pour suivre les changements. */
@@ -116,6 +117,11 @@ export const api = {
     if (params.offset) search.set('offset', String(params.offset))
     return request<Page<Album>>(`/api/albums?${search}`)
   },
+  authStatus: () => request<AuthStatus>('/api/auth/me'),
+  logout: () => request<{ provider_logout_url: string | null }>('/api/auth/logout', {
+    method: 'POST',
+  }),
+
   genres: () => request<Genre[]>('/api/genres'),
   lyrics: (trackId: number) => request<Lyrics>(`/api/tracks/${trackId}/lyrics`),
   album: (id: number) => request<AlbumDetail>(`/api/albums/${id}`),
