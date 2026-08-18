@@ -17,6 +17,7 @@ import { Playlists } from './routes/Playlists'
 import { Search } from './routes/Search'
 import { Sessions } from './routes/Sessions'
 import { Settings } from './routes/Settings'
+import { Stats } from './routes/Stats'
 import { useAuth, useDisplayName } from './state/auth'
 import { Connexion } from './routes/Connexion'
 import { useCurrentSession } from './state/session'
@@ -36,6 +37,7 @@ const NAV: { to: string; label: string; section?: string }[] = [
   { to: '/playlists', label: 'Playlists', section: 'Bibliothèque' },
   { to: '/sessions', label: "Sessions d'écoute" },
   { to: '/settings', label: 'Configuration' },
+  { to: '/stats', label: 'Statistiques' },
   { to: '/admin', label: 'Administration' },
 ]
 
@@ -159,6 +161,7 @@ export default function App() {
               <Route path="/search" element={<Search />} />
               <Route path="/sessions" element={<Sessions />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/stats" element={<Stats />} />
               <Route path="/admin" element={<Admin />} />
             </Routes>
           </div>

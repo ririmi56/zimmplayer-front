@@ -54,6 +54,8 @@ export type AppUser = components['schemas']['UserOut']
 export type Person = components['schemas']['PersonOut']
 export type Playlist = components['schemas']['PlaylistOut']
 export type PlaylistDetail = components['schemas']['PlaylistDetail']
+export type GlobalStats = components['schemas']['GlobalStats']
+export type UserStats = components['schemas']['UserStats']
 export type Page<T> = { items: T[]; total: number; limit: number; offset: number }
 
 /** Pseudo courant, lu au moment de l'appel pour suivre les changements. */
@@ -124,6 +126,14 @@ export const api = {
   authStatus: () => request<AuthStatus>('/api/auth/me'),
   users: () => request<AppUser[]>('/api/admin/users'),
   people: () => request<Person[]>('/api/users'),
+
+  stats: () => request<GlobalStats>('/api/stats'),
+  userStats: () => request<UserStats[]>('/api/stats/users'),
+  reportListen: (trackId: number, seconds: number) =>
+    request<void>('/api/stats/listens', {
+      method: 'POST',
+      body: JSON.stringify({ track_id: trackId, seconds }),
+    }),
 
   playlists: () => request<Playlist[]>('/api/playlists'),
   playlist: (id: number) => request<PlaylistDetail>(`/api/playlists/${id}`),
