@@ -19,6 +19,10 @@ export interface SnapStatus {
   samples: number
   played: number
   late: number
+  /** Écart courant entre horloge locale et AudioContext (voir SnapPlayer). */
+  driftMs: number
+  /** Recalages d'ancrage, automatiques ou forcés, depuis le démarrage. */
+  resyncs: number
 }
 
 const SYNC_FAST_MS = 500
@@ -52,6 +56,8 @@ export class SnapcastClient {
     samples: 0,
     played: 0,
     late: 0,
+    driftMs: 0,
+    resyncs: 0,
   }
 
   private readonly url: string
@@ -98,6 +104,29 @@ export class SnapcastClient {
     await this.player.stop()
     this.clock.reset()
     this.update({ state: 'idle', error: null })
+  }
+
+  /**
+   * Resynchronisation forcée, à la main de l'utilisateur.
+   *
+   * Le recalage d'ancrage automatique (voir `SnapPlayer.correctDrift`) traite
+   * la dérive ordinaire sans qu'on s'en aperçoive. Cette méthode-ci va plus
+   * loin : elle jette aussi l'estimation du décalage d'horloge et la reconstruit
+   * au rythme rapide du démarrage. C'est le recours quand l'estimation elle-même
+   * est fausse — après une mise en veille, un changement de réseau, ou tout
+   * simplement quand la lecture s'entend décalée.
+   *
+   * Le son se coupe le temps de reprendre trois mesures, soit ~1,5 s.
+   */
+  resync(): void {
+    if (this.socket?.readyState !== WebSocket.OPEN) return
+    this.clock.reset()
+    this.player.resync()
+    if (this.timeTimer !== null) window.clearTimeout(this.timeTimer)
+    this.pendingTimeRequests.clear()
+    this.syncCount = 0
+    this.scheduleTimeSync(0)
+    this.update({ state: 'syncing', error: null })
   }
 
   setVolume(volume: number, muted: boolean): void {

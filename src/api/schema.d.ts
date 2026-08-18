@@ -901,8 +901,6 @@ export interface components {
         SnapcastConfig: {
             /** Host */
             host: string;
-            /** Port */
-            port: number;
             /**
              * Http Port
              * @default 1780

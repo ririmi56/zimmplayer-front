@@ -1,4 +1,5 @@
 import type { Track } from '../api/client'
+import { ICONS, Icon } from '../player/icons'
 import { usePlayer } from '../player/store'
 import { useNowPlaying } from '../player/nowPlaying'
 import { useCurrentSession, useEnqueue, usePlayNowInSession } from '../state/session'
@@ -68,18 +69,20 @@ export function TrackList({ tracks, showAlbum = false, onEdit }: Props) {
               <button
                 onClick={() => enqueue.mutate({ track_ids: [track.id] })}
                 title="Ajouter à la file"
-                className="shrink-0 text-xs text-neutral-500 opacity-0 hover:text-emerald-400 group-hover:opacity-100"
+                aria-label="Ajouter à la file"
+                className="shrink-0 text-neutral-500 opacity-0 hover:text-emerald-400 group-hover:opacity-100"
               >
-                + File
+                <Icon path={ICONS.queueAdd} className="h-4 w-4" />
               </button>
             )}
             {onEdit && (
               <button
                 onClick={() => onEdit(track)}
                 title="Corriger les métadonnées"
-                className="shrink-0 text-xs text-neutral-500 opacity-0 hover:text-neutral-200 group-hover:opacity-100"
+                aria-label="Corriger les métadonnées"
+                className="shrink-0 text-neutral-500 opacity-0 hover:text-neutral-200 group-hover:opacity-100"
               >
-                Éditer
+                <Icon path={ICONS.edit} className="h-4 w-4" />
               </button>
             )}
             <span className="w-12 shrink-0 text-right tabular-nums text-neutral-500">

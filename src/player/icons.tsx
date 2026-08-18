@@ -9,13 +9,26 @@ export const ICONS = {
   mute: 'M11 5 6 9H2v6h4l5 4zM22 9l-6 6M16 9l6 6',
   lyrics: 'M4 6h16M4 10h16M4 14h10M4 18h7',
   queue: 'M4 7h11M4 12h11M4 17h7M17 12v7M17 12l4-2v7',
+  queueAdd: 'M4 6h13M4 11h13M4 16h8M17 17h6M20 14v6',
+  headphones: 'M4 14v-2a8 8 0 0116 0v2M4 14h3v6H4zM17 14h3v6h-3z',
+  dragHandle: 'M5 9h14M5 15h14',
+  edit: 'M4 20h4L20 8l-4-4L4 16zM14 6l4 4',
 }
 
-export function Icon({ path, filled = false }: { path: string; filled?: boolean }) {
+export function Icon({
+  path,
+  filled = false,
+  className = 'h-5 w-5',
+}: {
+  path: string
+  filled?: boolean
+  /** Taille par defaut adaptee a la barre de lecture ; a reduire ailleurs. */
+  className?: string
+}) {
   return (
     <svg
       viewBox="0 0 24 24"
-      className="h-5 w-5"
+      className={className}
       fill={filled ? 'currentColor' : 'none'}
       stroke="currentColor"
       strokeWidth="1.8"

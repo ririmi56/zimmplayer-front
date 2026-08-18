@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { api, type SnapcastConfig } from '../api/client'
 import { SnapMembers } from '../components/SnapMembers'
+import { useSnapclient } from '../snapcast/useSnapclient'
 import { useIdentity } from '../state/identity'
 
 export function Settings() {
@@ -40,6 +41,8 @@ export function Settings() {
       </section>
 
       <SnapcastServer />
+
+      <LocalListening />
 
       <section>
         <h2 className="mb-1 text-sm font-medium uppercase tracking-wide text-neutral-400">
@@ -81,7 +84,9 @@ function SnapcastServer() {
         Serveur Snapcast
       </h2>
       <p className="mb-3 text-xs text-neutral-500">
-        Réglage partagé par tous les utilisateurs. « Adresse annoncée » est celle par laquelle
+        Réglage partagé par tous les utilisateurs. « Port HTTP » est celui du serveur web de
+        snapserver (1780 par défaut) : il porte à la fois le contrôle et l'audio — le port de
+        contrôle 1705 n'est plus utilisé. « Adresse annoncée » est celle par laquelle
         snapserver joint cette API pour venir chercher l'audio : elle doit être joignable
         depuis le serveur Snapcast.
       </p>
@@ -108,15 +113,7 @@ function SnapcastServer() {
           className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:border-neutral-500 focus:outline-none"
         />
 
-        <label className="text-sm text-neutral-400">Port de contrôle</label>
-        <input
-          type="number"
-          value={draft.port}
-          onChange={(e) => setDraft({ ...draft, port: Number(e.target.value) })}
-          className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:border-neutral-500 focus:outline-none"
-        />
-
-        <label className="text-sm text-neutral-400">Port HTTP (audio)</label>
+        <label className="text-sm text-neutral-400">Port HTTP</label>
         <input
           type="number"
           value={draft.http_port}
@@ -146,6 +143,93 @@ function SnapcastServer() {
           )}
         </div>
       </form>
+    </section>
+  )
+}
+
+const STATE_LABELS: Record<string, string> = {
+  idle: 'à l’arrêt',
+  connecting: 'connexion…',
+  syncing: 'synchronisation…',
+  playing: 'en lecture',
+  error: 'erreur',
+}
+
+/**
+ * Synchronisation de ce navigateur en tant que snapclient.
+ *
+ * Sert à diagnostiquer une dérive : la dérive d'ancrage est corrigée toute
+ * seule au-delà du seuil (voir `snapcast/player.ts`), et les morceaux en retard
+ * en sont le témoin. Le bouton force une resynchronisation complète, horloge
+ * serveur comprise, pour le cas où l'estimation elle-même est fausse.
+ *
+ * Ne concerne que ce navigateur : les enceintes physiques se recalent seules,
+ * et l'API de snapserver n'offre aucune méthode pour les y forcer.
+ */
+function LocalListening() {
+  const snap = useSnapclient()
+  const { status } = snap
+
+  return (
+    <section>
+      <h2 className="mb-1 text-sm font-medium uppercase tracking-wide text-neutral-400">
+        Écoute sur ce navigateur
+      </h2>
+      {!snap.available ? (
+        <p className="text-xs text-neutral-500">
+          Rejoignez une session d'écoute pour que ce navigateur joue le flux, synchronisé avec
+          les autres appareils.
+        </p>
+      ) : (
+        <>
+          <p className="mb-3 text-xs text-neutral-500">
+            La dérive entre l'horloge du système et celle de la carte son est corrigée
+            automatiquement. Si la lecture s'entend malgré tout décalée, forcez une
+            resynchronisation : le son se coupe une seconde ou deux, le temps de reprendre les
+            mesures.
+          </p>
+          <dl className="grid max-w-md grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
+            <dt className="text-neutral-400">État</dt>
+            <dd className="text-neutral-100">
+              {STATE_LABELS[status.state] ?? status.state}
+              {status.error && <span className="text-red-400"> — {status.error}</span>}
+            </dd>
+
+            <dt className="text-neutral-400">Décalage d'horloge serveur</dt>
+            <dd className="tabular-nums text-neutral-100">
+              {status.offsetMs.toFixed(1)} ms
+              <span className="text-neutral-500"> ({status.samples} mesures)</span>
+            </dd>
+
+            <dt className="text-neutral-400">Dérive d'ancrage</dt>
+            <dd className="tabular-nums text-neutral-100">{status.driftMs.toFixed(1)} ms</dd>
+
+            <dt className="text-neutral-400">Morceaux</dt>
+            <dd className="tabular-nums text-neutral-100">
+              {status.played} joués
+              <span className={status.late > 0 ? 'text-amber-400' : 'text-neutral-500'}>
+                {' '}
+                · {status.late} en retard
+              </span>
+            </dd>
+
+            <dt className="text-neutral-400">Recalages</dt>
+            <dd className="tabular-nums text-neutral-100">{status.resyncs}</dd>
+          </dl>
+          <button
+            onClick={snap.resync}
+            disabled={!snap.listening}
+            className="mt-4 rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-200 hover:border-neutral-500 disabled:opacity-40"
+          >
+            Resynchroniser
+          </button>
+          {!snap.listening && (
+            <span className="ml-3 text-xs text-neutral-500">
+              Activez « Écouter ici » pour pouvoir resynchroniser.
+            </span>
+          )}
+        </>
+      )}
     </section>
   )
 }
