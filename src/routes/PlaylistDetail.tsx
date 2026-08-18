@@ -4,6 +4,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, type Person, type PlaylistDetail as Detail } from '../api/client'
 import { Cover } from '../components/Cover'
 import { formatDuration } from '../components/format'
+import { dropTarget } from '../components/queueOrder'
+import { ICONS, Icon } from '../player/icons'
 import { usePlayer } from '../player/store'
 import { useCurrentSession, useEnqueue, usePlayNowInSession } from '../state/session'
 
@@ -22,6 +24,15 @@ export function PlaylistDetail() {
     queryClient.invalidateQueries({ queryKey: ['playlist', playlistId] })
     queryClient.invalidateQueries({ queryKey: ['playlists'] })
   }
+
+  const deplacer = useMutation({
+    mutationFn: ({ itemId, to }: { itemId: number; to: number }) =>
+      api.movePlaylistTrack(playlistId, itemId, to),
+    onSuccess: rafraichir,
+  })
+  const [saisi, setSaisi] = useState<number | null>(null)
+  /** Rang d'insertion visé, entre 0 et le nombre de titres. */
+  const [depot, setDepot] = useState<number | null>(null)
 
   const retirer = useMutation({
     mutationFn: (itemId: number) => api.removeFromPlaylist(playlistId, itemId),
@@ -48,6 +59,22 @@ export function PlaylistDetail() {
 
   const data = playlist.data!
   const tracks = data.items.map((item) => item.track)
+
+  const annulerDepot = () => {
+    setSaisi(null)
+    setDepot(null)
+  }
+
+  const validerDepot = () => {
+    const depart = data.items.findIndex((item) => item.id === saisi)
+    if (depart >= 0 && depot !== null) {
+      // `dropTarget` compense le retrait prealable : deposer un titre juste
+      // apres lui-meme doit le laisser sur place.
+      const cible = dropTarget(depart, depot)
+      if (cible !== null) deplacer.mutate({ itemId: saisi!, to: cible })
+    }
+    annulerDepot()
+  }
 
   return (
     <>
@@ -79,8 +106,39 @@ export function PlaylistDetail() {
         </p>
       ) : (
         <ol className="max-w-3xl divide-y divide-neutral-800/60">
-          {data.items.map((item) => (
-            <li key={item.id} className="group flex items-center gap-3 px-2 py-2">
+          {data.items.map((item, rang) => (
+            <li
+              key={item.id}
+              draggable={data.can_edit}
+              onDragStart={(event) => {
+                setSaisi(item.id)
+                event.dataTransfer.effectAllowed = 'move'
+              }}
+              onDragOver={(event) => {
+                if (saisi === null) return
+                event.preventDefault()
+                event.dataTransfer.dropEffect = 'move'
+                // Moitié haute : on insère avant ; moitié basse : après.
+                const boite = event.currentTarget.getBoundingClientRect()
+                const apres = event.clientY - boite.top > boite.height / 2
+                setDepot(apres ? rang + 1 : rang)
+              }}
+              onDrop={(event) => {
+                event.preventDefault()
+                validerDepot()
+              }}
+              onDragEnd={annulerDepot}
+              className={[
+                'group flex items-center gap-3 rounded border-y-2 px-2 py-2',
+                // Repère d'insertion. Les bordures existent toujours, en
+                // transparent : le trait apparaît sans décaler la liste.
+                depot === rang ? 'border-t-sky-400' : 'border-t-transparent',
+                depot === data.items.length && rang === data.items.length - 1
+                  ? 'border-b-sky-400'
+                  : 'border-b-transparent',
+                item.id === saisi ? 'opacity-40' : '',
+              ].join(' ')}
+            >
               <Cover
                 albumId={item.track.album_id}
                 hasCover={item.track.has_cover}
@@ -98,6 +156,25 @@ export function PlaylistDetail() {
               <span className="shrink-0 text-xs tabular-nums text-neutral-600">
                 {formatDuration(item.track.duration_s)}
               </span>
+              {data.can_edit && (
+                <button
+                  title="Déplacer (glisser, ou flèches haut et bas)"
+                  aria-label={`Déplacer ${item.track.title}`}
+                  onKeyDown={(event) => {
+                    if (event.key === 'ArrowUp' && rang > 0) {
+                      event.preventDefault()
+                      deplacer.mutate({ itemId: item.id, to: rang - 1 })
+                    }
+                    if (event.key === 'ArrowDown' && rang < data.items.length - 1) {
+                      event.preventDefault()
+                      deplacer.mutate({ itemId: item.id, to: rang + 1 })
+                    }
+                  }}
+                  className="shrink-0 cursor-grab text-neutral-700 opacity-0 hover:text-neutral-200 focus:opacity-100 group-hover:opacity-100"
+                >
+                  <Icon path={ICONS.dragHandle} className="h-4 w-4" />
+                </button>
+              )}
               {data.can_edit && (
                 <button
                   onClick={() => retirer.mutate(item.id)}

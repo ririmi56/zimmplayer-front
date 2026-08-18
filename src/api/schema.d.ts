@@ -347,6 +347,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/playlists/{playlist_id}/tracks/{item_id}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move Track
+         * @description Deplace un titre au rang demande.
+         *
+         *     Renumerote toute la playlist plutot que d'echanger deux positions : c'est
+         *     la seule facon de garantir des rangs contigus, y compris apres des retraits
+         *     qui en ont laisse des trous.
+         *
+         *     Reserve a qui peut ecrire : reordonner, c'est modifier la playlist.
+         */
+        post: operations["move_track_api_playlists__playlist_id__tracks__item_id__move_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/playlists/{playlist_id}/shares/{user_id}": {
         parameters: {
             query?: never;
@@ -1099,6 +1125,11 @@ export interface components {
             track: components["schemas"]["TrackOut"];
             /** Added By */
             added_by: string | null;
+        };
+        /** PlaylistMove */
+        PlaylistMove: {
+            /** To Index */
+            to_index: number;
         };
         /** PlaylistOut */
         PlaylistOut: {
@@ -2109,6 +2140,44 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    move_track_api_playlists__playlist_id__tracks__item_id__move_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path: {
+                playlist_id: number;
+                item_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlaylistMove"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

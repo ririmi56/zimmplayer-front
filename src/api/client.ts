@@ -140,6 +140,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
+  movePlaylistTrack: (id: number, itemId: number, toIndex: number) =>
+    request<PlaylistDetail>(`/api/playlists/${id}/tracks/${itemId}/move`, {
+      method: 'POST',
+      body: JSON.stringify({ to_index: toIndex }),
+    }),
   removeFromPlaylist: (id: number, itemId: number) =>
     request<PlaylistDetail>(`/api/playlists/${id}/tracks/${itemId}`, { method: 'DELETE' }),
   sharePlaylist: (id: number, userId: number, canEdit: boolean) =>
