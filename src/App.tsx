@@ -82,6 +82,9 @@ export default function App() {
   const { data: session } = useCurrentSession()
   const name = useDisplayName()
   const auth = useAuth()
+  // Masquer l'onglet n'est pas la protection — le serveur refuse les routes
+  // par un 403 — mais proposer une page qu'on ne peut pas ouvrir n'aide personne.
+  const admin = !auth.oidc_enabled || auth.role === 'admin'
 
   // Rejoindre une session, c'est se synchroniser via Snapcast : le son sort
   // du serveur, ce navigateur ne doit rien jouer lui-meme, sous peine de
@@ -105,7 +108,8 @@ export default function App() {
       <div className="flex min-h-0 flex-1">
         <nav className="flex w-56 shrink-0 flex-col gap-1 border-r border-neutral-800 bg-neutral-950 p-4">
           <div className="mb-6 px-2 text-lg font-semibold text-neutral-100">Zimmplayer</div>
-          {NAV.map((item, position) => (
+          {NAV.map((item, position) =>
+            !admin && item.to === '/admin' ? null : (
             <div key={item.to}>
               {item.section && item.section !== NAV[position - 1]?.section && (
                 <div className="mb-1 mt-4 px-3 text-xs font-medium uppercase tracking-wide text-neutral-500">

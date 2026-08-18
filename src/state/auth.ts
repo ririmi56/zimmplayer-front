@@ -10,6 +10,7 @@ const INCONNU: AuthStatus = {
   email: '',
   groups: [],
   role: 'admin',
+  is_super_admin: true,
 }
 
 /**

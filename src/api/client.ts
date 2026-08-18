@@ -50,6 +50,7 @@ export type SnapRawResult = {
 }
 export type ScanError = components['schemas']['ScanErrorOut']
 export type AuthStatus = components['schemas']['AuthStatus']
+export type AppUser = components['schemas']['UserOut']
 export type Page<T> = { items: T[]; total: number; limit: number; offset: number }
 
 /** Pseudo courant, lu au moment de l'appel pour suivre les changements. */
@@ -118,6 +119,12 @@ export const api = {
     return request<Page<Album>>(`/api/albums?${search}`)
   },
   authStatus: () => request<AuthStatus>('/api/auth/me'),
+  users: () => request<AppUser[]>('/api/admin/users'),
+  setUserAdmin: (id: number, isAdmin: boolean) =>
+    request<AppUser>(`/api/admin/users/${id}/admin`, {
+      method: 'PUT',
+      body: JSON.stringify({ is_admin: isAdmin }),
+    }),
   logout: () => request<{ provider_logout_url: string | null }>('/api/auth/logout', {
     method: 'POST',
   }),

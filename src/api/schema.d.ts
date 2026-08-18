@@ -672,6 +672,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Users
+         * @description Les personnes deja connectees, les plus recentes d'abord.
+         *
+         *     Il n'y a personne d'autre a proposer : aucune API OIDC standard ne permet
+         *     de lister les comptes d'un fournisseur. On ne promeut donc que quelqu'un
+         *     qui s'est deja connecte au moins une fois.
+         */
+        get: operations["list_users_api_admin_users_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{user_id}/admin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Admin
+         * @description Accorde ou retire le role d'administrateur.
+         */
+        put: operations["set_admin_api_admin_users__user_id__admin_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -693,6 +737,11 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AdminUpdate */
+        AdminUpdate: {
+            /** Is Admin */
+            is_admin: boolean;
+        };
         /** AlbumDetail */
         AlbumDetail: {
             /** Id */
@@ -807,6 +856,8 @@ export interface components {
             groups: string[];
             /** Role */
             role: string;
+            /** Is Super Admin */
+            is_super_admin: boolean;
         };
         /** ClientsUpdate */
         ClientsUpdate: {
@@ -1079,6 +1130,29 @@ export interface components {
             track_no?: number | null;
             /** Disc No */
             disc_no?: number | null;
+        };
+        /**
+         * UserOut
+         * @description Une personne deja connectee, telle que la page Administration l'affiche.
+         */
+        UserOut: {
+            /** Id */
+            id: number;
+            /** Subject */
+            subject: string;
+            /** Name */
+            name: string;
+            /** Email */
+            email: string;
+            /** Is Admin */
+            is_admin: boolean;
+            /** Is Super Admin */
+            is_super_admin: boolean;
+            /**
+             * Last Seen At
+             * Format: date-time
+             */
+            last_seen_at: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -2529,6 +2603,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ScanErrorOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_users_api_admin_users_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_admin_api_admin_users__user_id__admin_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path: {
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
                 };
             };
             /** @description Validation Error */
