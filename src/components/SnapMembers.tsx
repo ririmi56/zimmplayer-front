@@ -17,6 +17,13 @@ type Member = { client: SnapClient; group: SnapGroup }
  */
 export function SnapMembers() {
   const queryClient = useQueryClient()
+  /**
+   * Snapserver n'oublie jamais un client : une enceinte debranchee, un
+   * navigateur ferme, un poste renomme y restent indefiniment. La liste
+   * accumule donc des fantomes, et c'est presque toujours l'etat present qui
+   * interesse — d'ou ce filtre, actif par defaut.
+   */
+  const [enLigneSeulement, setEnLigneSeulement] = useState(true)
   // Le navigateur est lui-meme un snapclient : il se reconnait par son
   // identifiant, sans que personne ait a le declarer.
   const myClientId = browserClientId()
@@ -44,11 +51,14 @@ export function SnapMembers() {
     )
   }
 
-  const members: Member[] = status.data.groups.flatMap((group) =>
+  const tous: Member[] = status.data.groups.flatMap((group) =>
     group.clients.map((client) => ({ client, group })),
   )
-  if (members.length === 0) {
-    return <p className="text-sm text-neutral-500">Aucun client Snapcast connecté.</p>
+  const horsLigne = tous.filter((m) => !m.client.connected).length
+  const members = enLigneSeulement ? tous.filter((m) => m.client.connected) : tous
+
+  if (tous.length === 0) {
+    return <p className="text-sm text-neutral-500">Aucun client Snapcast connu.</p>
   }
 
   const sessionList = sessions.data ?? []
@@ -61,6 +71,20 @@ export function SnapMembers() {
 
   return (
     <div className="space-y-6">
+      <Filtre
+        enLigneSeulement={enLigneSeulement}
+        onChange={setEnLigneSeulement}
+        horsLigne={horsLigne}
+        total={tous.length}
+      />
+
+      {members.length === 0 && (
+        <p className="text-sm text-neutral-500">
+          Aucun client en ligne. {horsLigne} connu{horsLigne > 1 ? 's' : ''} de snapserver, tous
+          hors ligne.
+        </p>
+      )}
+
       {bySession.map(({ session, members: inSession }) => (
         <SessionCluster
           key={session.id}
@@ -88,6 +112,55 @@ export function SnapMembers() {
             ))}
           </ul>
         </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Bascule entre tous les clients et les seuls presents.
+ *
+ * Le nombre de clients masques est affiche : sans lui, un filtre actif par
+ * defaut donnerait l'impression qu'une enceinte a disparu de la configuration
+ * alors qu'elle est seulement eteinte.
+ */
+function Filtre({
+  enLigneSeulement,
+  onChange,
+  horsLigne,
+  total,
+}: {
+  enLigneSeulement: boolean
+  onChange: (valeur: boolean) => void
+  horsLigne: number
+  total: number
+}) {
+  const options: [boolean, string][] = [
+    [true, `En ligne (${total - horsLigne})`],
+    [false, `Tous (${total})`],
+  ]
+  return (
+    <div className="flex items-center gap-3">
+      <div className="inline-flex rounded-full border border-neutral-700 p-0.5">
+        {options.map(([valeur, libelle]) => (
+          <button
+            key={String(valeur)}
+            onClick={() => onChange(valeur)}
+            aria-pressed={enLigneSeulement === valeur}
+            className={`rounded-full px-3 py-1 text-xs ${
+              enLigneSeulement === valeur
+                ? 'bg-neutral-800 text-neutral-100'
+                : 'text-neutral-400 hover:text-neutral-200'
+            }`}
+          >
+            {libelle}
+          </button>
+        ))}
+      </div>
+      {enLigneSeulement && horsLigne > 0 && (
+        <span className="text-xs text-neutral-500">
+          {horsLigne} hors ligne masqué{horsLigne > 1 ? 's' : ''}
+        </span>
       )}
     </div>
   )
