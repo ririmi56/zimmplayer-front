@@ -9,6 +9,7 @@ export const ICONS = {
   mute: 'M11 5 6 9H2v6h4l5 4zM22 9l-6 6M16 9l6 6',
   lyrics: 'M4 6h16M4 10h16M4 14h10M4 18h7',
   queue: 'M4 7h11M4 12h11M4 17h7M17 12v7M17 12l4-2v7',
+  playlistAdd: 'M4 6h11M4 12h11M4 18h7M17 15v6M14 18h6',
   queueAdd: 'M4 6h13M4 11h13M4 16h8M17 17h6M20 14v6',
   headphones: 'M4 14v-2a8 8 0 0116 0v2M4 14h3v6H4zM17 14h3v6h-3z',
   dragHandle: 'M5 9h14M5 15h14',

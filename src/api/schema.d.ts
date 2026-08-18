@@ -95,6 +95,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List People
+         * @description Les personnes connues, pour choisir avec qui partager une playlist.
+         *
+         *     Accessible a tout le monde et non aux seuls administrateurs : sans elle,
+         *     personne ne pourrait partager. On n'expose que le nom et le courriel, soit
+         *     ce qu'un carnet d'adresses montrerait — ni les groupes, ni le role, ni la
+         *     date de derniere venue.
+         *
+         *     On ne connait que les personnes deja passees : aucune API OIDC standard ne
+         *     permet de lister les comptes d'un fournisseur.
+         */
+        get: operations["list_people_api_users_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/artists": {
         parameters: {
             query?: never;
@@ -234,6 +262,107 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/playlists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Playlists
+         * @description Les miennes et celles qu'on m'a partagees, les plus recentes d'abord.
+         */
+        get: operations["list_playlists_api_playlists_get"];
+        put?: never;
+        /** Create Playlist */
+        post: operations["create_playlist_api_playlists_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/playlists/{playlist_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Playlist */
+        get: operations["get_playlist_api_playlists__playlist_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Playlist */
+        delete: operations["delete_playlist_api_playlists__playlist_id__delete"];
+        options?: never;
+        head?: never;
+        /** Rename Playlist */
+        patch: operations["rename_playlist_api_playlists__playlist_id__patch"];
+        trace?: never;
+    };
+    "/api/playlists/{playlist_id}/tracks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Tracks
+         * @description Ajoute des titres, ou tout un album, a la suite.
+         *
+         *     Les doublons sont acceptes : mettre deux fois le meme titre est parfois
+         *     voulu, et l'interdire surprendrait plus que ca n'aiderait.
+         */
+        post: operations["add_tracks_api_playlists__playlist_id__tracks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/playlists/{playlist_id}/tracks/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Track */
+        delete: operations["remove_track_api_playlists__playlist_id__tracks__item_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/playlists/{playlist_id}/shares/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Share
+         * @description Partage la playlist, ou change le droit accorde.
+         */
+        put: operations["set_share_api_playlists__playlist_id__shares__user_id__put"];
+        post?: never;
+        /** Remove Share */
+        delete: operations["remove_share_api_playlists__playlist_id__shares__user_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -923,6 +1052,94 @@ export interface components {
             offset: number;
         };
         /**
+         * PersonOut
+         * @description Une personne connue, telle qu'un selecteur de partage l'affiche.
+         */
+        PersonOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Email */
+            email: string;
+        };
+        /** PlaylistCreate */
+        PlaylistCreate: {
+            /** Name */
+            name: string;
+        };
+        /** PlaylistDetail */
+        PlaylistDetail: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Owner Name */
+            owner_name: string;
+            /** Is Owner */
+            is_owner: boolean;
+            /** Can Edit */
+            can_edit: boolean;
+            /** Track Count */
+            track_count: number;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Items */
+            items: components["schemas"]["PlaylistItemOut"][];
+            /** Shares */
+            shares: components["schemas"]["PlaylistShareOut"][];
+        };
+        /** PlaylistItemOut */
+        PlaylistItemOut: {
+            /** Id */
+            id: number;
+            track: components["schemas"]["TrackOut"];
+            /** Added By */
+            added_by: string | null;
+        };
+        /** PlaylistOut */
+        PlaylistOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Owner Name */
+            owner_name: string;
+            /** Is Owner */
+            is_owner: boolean;
+            /** Can Edit */
+            can_edit: boolean;
+            /** Track Count */
+            track_count: number;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** PlaylistShareOut */
+        PlaylistShareOut: {
+            /** User Id */
+            user_id: number;
+            /** Name */
+            name: string;
+            /** Can Edit */
+            can_edit: boolean;
+        };
+        /**
+         * PlaylistTracksAdd
+         * @description Des titres nommes un par un, ou tout un album.
+         */
+        PlaylistTracksAdd: {
+            /** Track Ids */
+            track_ids?: number[] | null;
+            /** Album Id */
+            album_id?: number | null;
+        };
+        /**
          * QueueAdd
          * @description Ajout de pistes explicites et/ou de tous les titres d'un album.
          */
@@ -1058,6 +1275,14 @@ export interface components {
              * @default 0
              */
             item_count: number;
+        };
+        /** ShareUpdate */
+        ShareUpdate: {
+            /**
+             * Can Edit
+             * @default false
+             */
+            can_edit: boolean;
         };
         /** SnapcastConfig */
         SnapcastConfig: {
@@ -1289,6 +1514,37 @@ export interface operations {
                     "application/json": {
                         [key: string]: string | null;
                     };
+                };
+            };
+        };
+    };
+    list_people_api_users_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -1623,6 +1879,316 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SearchResults"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_playlists_api_playlists_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_playlist_api_playlists_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlaylistCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_playlist_api_playlists__playlist_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path: {
+                playlist_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_playlist_api_playlists__playlist_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path: {
+                playlist_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rename_playlist_api_playlists__playlist_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path: {
+                playlist_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlaylistCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_tracks_api_playlists__playlist_id__tracks_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path: {
+                playlist_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlaylistTracksAdd"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_track_api_playlists__playlist_id__tracks__item_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path: {
+                playlist_id: number;
+                item_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_share_api_playlists__playlist_id__shares__user_id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path: {
+                playlist_id: number;
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShareUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_share_api_playlists__playlist_id__shares__user_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path: {
+                playlist_id: number;
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistDetail"];
                 };
             };
             /** @description Validation Error */

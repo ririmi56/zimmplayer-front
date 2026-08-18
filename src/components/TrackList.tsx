@@ -4,6 +4,7 @@ import { usePlayer } from '../player/store'
 import { useNowPlaying } from '../player/nowPlaying'
 import { useCurrentSession, useEnqueue, usePlayNowInSession } from '../state/session'
 import { useIdentity } from '../state/identity'
+import { AddToPlaylist } from './AddToPlaylist'
 import { formatDuration } from './format'
 
 type Props = {
@@ -75,6 +76,10 @@ export function TrackList({ tracks, showAlbum = false, onEdit }: Props) {
                 <Icon path={ICONS.queueAdd} className="h-4 w-4" />
               </button>
             )}
+            <AddToPlaylist
+              trackIds={[track.id]}
+              className="text-neutral-500 opacity-0 hover:text-emerald-400 group-hover:opacity-100"
+            />
             {onEdit && (
               <button
                 onClick={() => onEdit(track)}

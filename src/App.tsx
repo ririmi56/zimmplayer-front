@@ -12,6 +12,8 @@ import { Artists } from './routes/Artists'
 import { Genres } from './routes/Genres'
 import { Library } from './routes/Library'
 import { NowPlaying } from './routes/NowPlaying'
+import { PlaylistDetail } from './routes/PlaylistDetail'
+import { Playlists } from './routes/Playlists'
 import { Search } from './routes/Search'
 import { Sessions } from './routes/Sessions'
 import { Settings } from './routes/Settings'
@@ -31,6 +33,7 @@ const NAV: { to: string; label: string; section?: string }[] = [
   { to: '/', label: 'Albums', section: 'Bibliothèque' },
   { to: '/artists', label: 'Artistes', section: 'Bibliothèque' },
   { to: '/genres', label: 'Genres', section: 'Bibliothèque' },
+  { to: '/playlists', label: 'Playlists', section: 'Bibliothèque' },
   { to: '/sessions', label: "Sessions d'écoute" },
   { to: '/settings', label: 'Configuration' },
   { to: '/admin', label: 'Administration' },
@@ -151,6 +154,8 @@ export default function App() {
               <Route path="/artists/:id" element={<Artist />} />
               <Route path="/albums/:id" element={<Album />} />
               <Route path="/genres" element={<Genres />} />
+              <Route path="/playlists" element={<Playlists />} />
+              <Route path="/playlists/:id" element={<PlaylistDetail />} />
               <Route path="/search" element={<Search />} />
               <Route path="/sessions" element={<Sessions />} />
               <Route path="/settings" element={<Settings />} />
