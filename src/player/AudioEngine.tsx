@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { streamUrl } from '../api/client'
+import { useMediaPosition } from './mediaSession'
 import { currentTrack, usePlayer } from './store'
 
 /**
@@ -20,6 +21,10 @@ export function AudioEngine() {
   const next = usePlayer((s) => s.next)
   const setProgress = usePlayer((s) => s.setProgress)
   const clearSeek = usePlayer((s) => s.clearSeek)
+  const currentTime = usePlayer((s) => s.currentTime)
+  const duration = usePlayer((s) => s.duration)
+
+  useMediaPosition(currentTime, duration, isPlaying)
 
   // Changement de piste : on ne recharge la source que si elle change vraiment,
   // sinon chaque rendu redemarrerait le morceau depuis le debut.

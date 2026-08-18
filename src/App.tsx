@@ -3,6 +3,7 @@ import { NavLink, Route, Routes, useNavigate } from 'react-router-dom'
 import { QueuePanel } from './components/QueuePanel'
 import { AudioEngine } from './player/AudioEngine'
 import { LyricsPanel } from './player/LyricsPanel'
+import { useMediaSession } from './player/mediaSession'
 import { PlayerBar } from './player/PlayerBar'
 import { RemoteBar } from './player/RemoteBar'
 import { Admin } from './routes/Admin'
@@ -84,6 +85,10 @@ export default function App() {
   // Rejoindre une session, c'est se synchroniser via Snapcast : le son sort
   // du serveur, ce navigateur ne doit rien jouer lui-meme, sous peine de
   // doubler la lecture avec un decalage. Hors session, ecoute solo locale.
+  // Monte une seule fois, hors des routes : les commandes media du navigateur
+  // et du systeme doivent survivre a la navigation, comme la lecture.
+  useMediaSession()
+
   const remote = session != null
 
   const barProps = {
