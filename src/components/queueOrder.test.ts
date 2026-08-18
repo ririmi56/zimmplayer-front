@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dropTarget } from './queueOrder'
+import { dropTarget, moveItem, remapAfterMove } from './queueOrder'
 
 /**
  * Le serveur retire l'element avant de le reinserer : le rang d'insertion vu a
@@ -23,5 +23,44 @@ describe('dropTarget', () => {
     expect(dropTarget(2, 2)).toBeNull()
     // Juste apres lui-meme : la place est la meme, malgre un rang different.
     expect(dropTarget(2, 3)).toBeNull()
+  })
+})
+
+describe('moveItem', () => {
+  it('déplace vers le bas', () => {
+    expect(moveItem(['a', 'b', 'c', 'd'], 0, 2)).toEqual(['b', 'c', 'a', 'd'])
+  })
+  it('déplace vers le haut', () => {
+    expect(moveItem(['a', 'b', 'c', 'd'], 3, 1)).toEqual(['a', 'd', 'b', 'c'])
+  })
+  it('laisse le tableau d’origine intact', () => {
+    const source = ['a', 'b', 'c']
+    moveItem(source, 0, 2)
+    expect(source).toEqual(['a', 'b', 'c'])
+  })
+})
+
+describe('remapAfterMove', () => {
+  /**
+   * Le test qui a du mordant : pour chaque déplacement possible d'une liste de
+   * six, on vérifie que `remapAfterMove` désigne bien, dans la liste déplacée,
+   * l'élément qui occupait le rang de départ. Un décalage d'un cran quelque
+   * part ferait échouer au moins un cas.
+   */
+  it('suit chaque élément, pour tous les déplacements d’une liste de six', () => {
+    const source = ['a', 'b', 'c', 'd', 'e', 'f']
+    for (let from = 0; from < source.length; from++) {
+      for (let to = 0; to < source.length; to++) {
+        const moved = moveItem(source, from, to)
+        for (let i = 0; i < source.length; i++) {
+          expect(moved[remapAfterMove(from, to, i)]).toBe(source[i])
+        }
+      }
+    }
+  })
+
+  it('une permutation reste une permutation', () => {
+    const rangs = [0, 1, 2, 3, 4].map((i) => remapAfterMove(1, 3, i))
+    expect([...rangs].sort()).toEqual([0, 1, 2, 3, 4])
   })
 })
