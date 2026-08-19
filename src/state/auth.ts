@@ -9,6 +9,7 @@ const INCONNU: AuthStatus = {
   name: '',
   email: '',
   groups: [],
+  picture: '',
   role: 'admin',
   is_super_admin: true,
 }

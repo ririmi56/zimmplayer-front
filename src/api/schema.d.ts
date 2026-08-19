@@ -276,7 +276,10 @@ export interface paths {
         };
         /**
          * List Playlists
-         * @description Les miennes et celles qu'on m'a partagees, les plus recentes d'abord.
+         * @description Les miennes, celles qu'on m'a partagees, et les publiques.
+         *
+         *     Les publiques des autres arrivent melangees aux miennes : c'est l'interface
+         *     qui les range a part, elle seule sait ce qu'elle veut en montrer.
          */
         get: operations["list_playlists_api_playlists_get"];
         put?: never;
@@ -303,8 +306,11 @@ export interface paths {
         delete: operations["delete_playlist_api_playlists__playlist_id__delete"];
         options?: never;
         head?: never;
-        /** Rename Playlist */
-        patch: operations["rename_playlist_api_playlists__playlist_id__patch"];
+        /**
+         * Update Playlist
+         * @description Renomme, et ouvre ou referme la playlist. Champ absent = inchange.
+         */
+        patch: operations["update_playlist_api_playlists__playlist_id__patch"];
         trace?: never;
     };
     "/api/playlists/{playlist_id}/tracks": {
@@ -389,6 +395,74 @@ export interface paths {
         post?: never;
         /** Remove Share */
         delete: operations["remove_share_api_playlists__playlist_id__shares__user_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/likes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Likes
+         * @description Les identifiants des titres que j'aime.
+         *
+         *     Volontairement des identifiants nus : l'interface n'a besoin que de savoir
+         *     quel coeur remplir, et cette liste tient en memoire meme sur une grosse
+         *     bibliotheque.
+         */
+        get: operations["my_likes_api_likes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/likes/tracks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Liked Tracks
+         * @description Mes titres aimes, le dernier ajoute en premier.
+         */
+        get: operations["my_liked_tracks_api_likes_tracks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/likes/{track_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Like
+         * @description Aimer un titre. Deux fois de suite ne change rien, et ne fait pas d'erreur.
+         */
+        put: operations["like_api_likes__track_id__put"];
+        post?: never;
+        /**
+         * Unlike
+         * @description Ne plus aimer. Silencieux si on ne l'aimait pas : le resultat est le meme.
+         */
+        delete: operations["unlike_api_likes__track_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1088,6 +1162,8 @@ export interface components {
             email: string;
             /** Groups */
             groups: string[];
+            /** Picture */
+            picture: string;
             /** Role */
             role: string;
             /** Is Super Admin */
@@ -1238,6 +1314,8 @@ export interface components {
             is_owner: boolean;
             /** Can Edit */
             can_edit: boolean;
+            /** Is Public */
+            is_public: boolean;
             /** Track Count */
             track_count: number;
             /**
@@ -1275,6 +1353,8 @@ export interface components {
             is_owner: boolean;
             /** Can Edit */
             can_edit: boolean;
+            /** Is Public */
+            is_public: boolean;
             /** Track Count */
             track_count: number;
             /**
@@ -1301,6 +1381,16 @@ export interface components {
             track_ids?: number[] | null;
             /** Album Id */
             album_id?: number | null;
+        };
+        /**
+         * PlaylistUpdate
+         * @description Modification partielle : un champ absent laisse la valeur en place.
+         */
+        PlaylistUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Is Public */
+            is_public?: boolean | null;
         };
         /**
          * QueueAdd
@@ -1827,6 +1917,7 @@ export interface operations {
                 q?: string | null;
                 artist_id?: number | null;
                 genre?: string | null;
+                sort?: "artiste" | "titre" | "annee" | "ajout" | "genre" | "likes";
                 limit?: number;
                 offset?: number;
             };
@@ -2226,7 +2317,7 @@ export interface operations {
             };
         };
     };
-    rename_playlist_api_playlists__playlist_id__patch: {
+    update_playlist_api_playlists__playlist_id__patch: {
         parameters: {
             query?: never;
             header?: {
@@ -2239,7 +2330,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PlaylistCreate"];
+                "application/json": components["schemas"]["PlaylistUpdate"];
             };
         };
         responses: {
@@ -2432,6 +2523,130 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["PlaylistDetail"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_likes_api_likes_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": number[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_liked_tracks_api_likes_tracks_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrackOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    like_api_likes__track_id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path: {
+                track_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unlike_api_likes__track_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path: {
+                track_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

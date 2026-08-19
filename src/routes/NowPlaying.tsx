@@ -1,25 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { coverUrl, type Track } from '../api/client'
+import { coverUrl } from '../api/client'
+import { AddToPlaylist } from '../components/AddToPlaylist'
 import { Cover } from '../components/Cover'
-import { formatDuration } from '../components/format'
+import { LikeButton } from '../components/LikeButton'
+import { formatDuration, formatSpan } from '../components/format'
 import { dropTarget } from '../components/queueOrder'
+import { resumer } from '../components/queueSummary'
 import { ICONS, Icon } from '../player/icons'
 import { useNowPlaying } from '../player/nowPlaying'
-import { usePlayer } from '../player/store'
-import { useCurrentSession, useSessionControl } from '../state/session'
-
-/** Une entrée de la file, indépendamment de la source qui la fournit. */
-type Entry = {
-  key: string | number
-  track: Track
-  addedBy?: string
-  played: boolean
-  current: boolean
-  play: () => void
-  /** Depose cette entree au rang `to` de la file. */
-  move: (to: number) => void
-}
+import { type Entry, useQueueEntries } from '../player/queueEntries'
+import { useCurrentSession } from '../state/session'
 
 /**
  * Onglet « Lecture » : ce qui joue, en grand.
@@ -94,9 +85,23 @@ export function NowPlaying() {
                 'Écoute locale, sur ce navigateur'
               )}
             </span>
-            <h1 className="mt-2 text-3xl font-semibold leading-tight text-neutral-50 sm:text-4xl">
-              {track.title}
-            </h1>
+            <div className="mt-2 flex items-start gap-3">
+              <h1 className="text-3xl font-semibold leading-tight text-neutral-50 sm:text-4xl">
+                {track.title}
+              </h1>
+              {/* Le meme bouton que dans les listes de titres : depuis ici on
+                  garde ce qu'on est en train d'ecouter sans repasser par
+                  l'album. */}
+              <LikeButton
+                trackId={track.id}
+                size="h-5 w-5"
+                className="mt-2 rounded-full border border-neutral-700 p-2 hover:border-neutral-500"
+              />
+              <AddToPlaylist
+                trackIds={[track.id]}
+                className="mt-2 rounded-full border border-neutral-700 p-2 text-neutral-300 hover:border-neutral-500 hover:text-neutral-100"
+              />
+            </div>
             <Link
               to={`/artists/${track.artist_id}`}
               className="mt-2 inline-block text-lg text-neutral-300 hover:text-neutral-100 hover:underline"
@@ -136,6 +141,9 @@ const QUEUE_HEIGHT = 'h-96'
  * au-dessus, la suite en dessous.
  */
 function Queue({ entries, upcoming }: { entries: Entry[]; upcoming: number }) {
+  const resume = resumer(
+    entries.map((e) => ({ played: e.played, current: e.current, duration_s: e.track.duration_s })),
+  )
   const list = useRef<HTMLOListElement>(null)
   const current = useRef<HTMLLIElement>(null)
   // Le premier placement est instantane : arriver sur la page en voyant la
@@ -177,13 +185,29 @@ function Queue({ entries, upcoming }: { entries: Entry[]; upcoming: number }) {
   }, [currentKey])
 
   return (
-    <section className="mt-12 max-w-3xl">
-      <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-neutral-400">
-        File d'attente
-        <span className="ml-2 font-normal normal-case tracking-normal text-neutral-500">
-          {upcoming > 0 ? `${upcoming} titre${upcoming > 1 ? 's' : ''} à suivre` : 'fin de file'}
-        </span>
-      </h2>
+    <section className="mt-12 max-w-5xl">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h2 className="text-sm font-medium uppercase tracking-wide text-neutral-400">
+          File d'attente
+          <span className="ml-2 font-normal normal-case tracking-normal text-neutral-500">
+            {upcoming > 0 ? `${upcoming} titre${upcoming > 1 ? 's' : ''} à suivre` : 'fin de file'}
+          </span>
+        </h2>
+        <p className="text-xs text-neutral-500">
+          {resume.total} titre{resume.total > 1 ? 's' : ''}
+          {' · '}
+          {resume.joues} lu{resume.joues > 1 ? 's' : ''}
+          {' · '}
+          {/* Le total complet en survol : l'afficher en permanence ferait deux
+              durées côte à côte, qu'on confondrait. */}
+          <span
+            title={`${formatSpan(resume.totalSecondes)} en tout`}
+            className="cursor-help underline decoration-dotted underline-offset-2"
+          >
+            {formatSpan(resume.restantSecondes)} restantes
+          </span>
+        </p>
+      </div>
       <ol
         ref={list}
         className={`${QUEUE_HEIGHT} relative overflow-y-auto rounded-lg border border-neutral-800/80 bg-neutral-900/40 p-1 pr-2`}
@@ -249,6 +273,7 @@ function Queue({ entries, upcoming }: { entries: Entry[]; upcoming: number }) {
                 {entry.addedBy && ` · ajouté par ${entry.addedBy}`}
               </div>
             </div>
+            <LikeButton trackId={entry.track.id} />
             <span className="shrink-0 text-xs tabular-nums text-neutral-600">
               {formatDuration(entry.track.duration_s)}
             </span>
@@ -273,54 +298,17 @@ function Queue({ entries, upcoming }: { entries: Entry[]; upcoming: number }) {
             >
               <Icon path={ICONS.dragHandle} className="h-4 w-4" />
             </button>
+            <button
+              onClick={entry.remove}
+              title="Retirer de la file"
+              aria-label={`Retirer ${entry.track.title} de la file`}
+              className="shrink-0 text-neutral-700 opacity-0 hover:text-red-400 focus:opacity-100 group-hover:opacity-100"
+            >
+              ✕
+            </button>
           </li>
         ))}
       </ol>
     </section>
   )
-}
-
-/**
- * File à afficher, quelle que soit la sortie : celle de la session si l'on en a
- * rejoint une, celle du lecteur local sinon.
- *
- * « Déjà joué » se lit dans l'ordre de lecture, pas dans l'ordre d'affichage :
- * en aléatoire, le local suit `order`, sans quoi le grisage désignerait des
- * titres encore à venir.
- */
-function useQueueEntries(): Entry[] {
-  const { data: session } = useCurrentSession()
-  const control = useSessionControl()
-  const queue = usePlayer((s) => s.queue)
-  const index = usePlayer((s) => s.index)
-  const shuffle = usePlayer((s) => s.shuffle)
-  const order = usePlayer((s) => s.order)
-  const playQueue = usePlayer((s) => s.playQueue)
-  const move = usePlayer((s) => s.move)
-
-  if (session) {
-    const currentIndex = session.items.findIndex((i) => i.id === session.current_item_id)
-    return session.items.map((item, position) => ({
-      key: item.id,
-      track: item.track,
-      addedBy: item.added_by,
-      played: currentIndex >= 0 && position < currentIndex,
-      current: item.id === session.current_item_id,
-      play: () => control.playItem(item.id),
-      move: (to) => control.move(item.id, to),
-    }))
-  }
-
-  const positions = shuffle && order.length === queue.length ? order : queue.map((_, i) => i)
-  const rank = new Map(positions.map((queueIndex, r) => [queueIndex, r]))
-  const currentRank = rank.get(index) ?? 0
-
-  return queue.map((track, position) => ({
-    key: position,
-    track,
-    played: (rank.get(position) ?? 0) < currentRank,
-    current: position === index,
-    play: () => playQueue(queue, position),
-    move: (to) => move(position, to),
-  }))
 }

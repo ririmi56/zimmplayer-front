@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { AlbumGrid } from '../components/AlbumGrid'
 import { AlbumSortSelect } from '../components/AlbumSortSelect'
-import { parseAlbumSort } from '../components/albumSort'
+import { albumSearchParams, parseAlbumSort, parseReverse } from '../components/albumSort'
 import { useInfiniteScroll } from '../components/useInfiniteScroll'
 
 /**
@@ -19,12 +19,14 @@ export function Library() {
   // qu'elle etait — ce qu'un useState ne donnerait pas.
   const [params, setParams] = useSearchParams()
   const sort = parseAlbumSort(params.get('tri'))
+  const reverse = parseReverse(params.get('sens'))
 
   const query = useInfiniteQuery({
     // `sort` dans la cle : sans lui, changer de tri reafficherait les pages
     // deja en cache, triees a l'ancienne.
-    queryKey: ['albums', sort],
-    queryFn: ({ pageParam }) => api.albums({ sort, limit: PAGE_SIZE, offset: pageParam }),
+    queryKey: ['albums', sort, reverse],
+    queryFn: ({ pageParam }) =>
+      api.albums({ sort, reverse, limit: PAGE_SIZE, offset: pageParam }),
     initialPageParam: 0,
     // `total` etant renvoye par chaque page, on sait s'arreter sans avoir a
     // deviner d'apres une page incomplete.
@@ -49,13 +51,15 @@ export function Library() {
           <span className="text-sm text-neutral-500">
             {albums.length < total ? `${albums.length} sur ${total} albums` : `${total} albums`}
           </span>
+          {/* `replace` : changer de tri n'est pas une navigation, l'empiler
+              obligerait a autant de retours arriere qu'on a essaye de tris. */}
           <AlbumSortSelect
             value={sort}
-            onChange={(next) => {
-              // `replace` : changer de tri n'est pas une navigation, l'empiler
-              // obligerait a autant de retours arriere qu'on a essaye de tris.
-              setParams(next === 'artiste' ? {} : { tri: next }, { replace: true })
-            }}
+            reverse={reverse}
+            onChange={(next) => setParams(albumSearchParams(next, reverse), { replace: true })}
+            onToggleReverse={() =>
+              setParams(albumSearchParams(sort, !reverse), { replace: true })
+            }
           />
         </div>
       </header>

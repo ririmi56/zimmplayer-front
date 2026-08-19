@@ -6,7 +6,7 @@ import { ICONS, Icon } from '../player/icons'
 /**
  * Ajoute des titres — ou tout un album — a une playlist.
  *
- * Le menu ne propose que les playlists ou l'on a le droit d'ecrire : les
+ * Le menu ne propose que les playlists ou l'on a le droit d'editer : les
  * afficher toutes pour repondre 403 au clic ne rendrait service a personne.
  */
 export function AddToPlaylist({
@@ -78,7 +78,7 @@ export function AddToPlaylist({
           )}
           {!playlists.isLoading && modifiables.length === 0 && (
             <p className="px-3 py-2 text-xs text-neutral-500">
-              Aucune playlist où écrire. Créez-en une depuis l’onglet Playlists.
+              Aucune playlist à éditer. Créez-en une depuis l’onglet Playlists.
             </p>
           )}
           {modifiables.map((playlist) => (

@@ -60,3 +60,69 @@ describe('usePlayer.move', () => {
     expect(usePlayer.getState().queue).toBe(avant)
   })
 })
+
+describe('usePlayer.remove', () => {
+  const titres = () => usePlayer.getState().queue.map((t) => t.title)
+  const courant = () => usePlayer.getState().queue[usePlayer.getState().index].title
+
+  beforeEach(() => {
+    usePlayer.setState({ shuffle: false, repeat: 'off', order: [] })
+    usePlayer.getState().playQueue(TITRES.map(piste), 2) // 'c' en cours
+  })
+
+  it('retire le titre de la file', () => {
+    usePlayer.getState().remove(0)
+    expect(titres()).toEqual(['b', 'c', 'd', 'e', 'f'])
+  })
+
+  it('ne fait pas sauter la lecture en retirant un titre situé avant', () => {
+    usePlayer.getState().remove(0)
+    expect(courant()).toBe('c')
+  })
+
+  it('laisse la lecture en place en retirant un titre situé après', () => {
+    usePlayer.getState().remove(4)
+    expect(courant()).toBe('c')
+  })
+
+  it('enchaîne sur le suivant si l’on retire le titre en cours', () => {
+    usePlayer.getState().remove(2)
+    expect(courant()).toBe('d')
+    expect(usePlayer.getState().isPlaying).toBe(true)
+  })
+
+  it('s’arrête si l’on retire le dernier titre en cours de lecture', () => {
+    usePlayer.getState().playQueue(TITRES.map(piste), TITRES.length - 1)
+    usePlayer.getState().remove(TITRES.length - 1)
+    expect(usePlayer.getState().isPlaying).toBe(false)
+  })
+
+  it('vide tout proprement en retirant le dernier titre restant', () => {
+    usePlayer.getState().playQueue([piste('a')], 0)
+    usePlayer.getState().remove(0)
+    expect(usePlayer.getState().queue).toEqual([])
+    expect(usePlayer.getState().index).toBe(0)
+    expect(usePlayer.getState().isPlaying).toBe(false)
+  })
+
+  it('ignore un rang hors limites', () => {
+    usePlayer.getState().remove(99)
+    usePlayer.getState().remove(-1)
+    expect(titres()).toEqual(TITRES)
+  })
+
+  it('préserve la séquence aléatoire restante', () => {
+    // Ordre de lecture impose : c, e, a, f, b, d.
+    usePlayer.setState({ shuffle: true, order: [2, 4, 0, 5, 1, 3], index: 2 })
+    usePlayer.getState().remove(0) // on retire 'a', ni courant ni joue
+    expect(titres()).toEqual(['b', 'c', 'd', 'e', 'f'])
+    // Les rangs ont recule d'un cran, 'a' a disparu, la suite est intacte.
+    expect(sequence()).toEqual(['c', 'e', 'f', 'b', 'd'])
+  })
+
+  it('enchaîne sur le suivant de l’ordre aléatoire, pas sur le voisin de la file', () => {
+    usePlayer.setState({ shuffle: true, order: [2, 4, 0, 5, 1, 3], index: 2 })
+    usePlayer.getState().remove(2) // on retire 'c', en cours
+    expect(courant()).toBe('e')
+  })
+})

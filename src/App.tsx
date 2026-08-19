@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { NavLink, Route, Routes, useNavigate } from 'react-router-dom'
+import { MonCompte } from './components/MonCompte'
 import { QueuePanel } from './components/QueuePanel'
 import { AudioEngine } from './player/AudioEngine'
 import { LyricsPanel } from './player/LyricsPanel'
@@ -13,6 +14,7 @@ import { Artist } from './routes/Artist'
 import { Artists } from './routes/Artists'
 import { Genres } from './routes/Genres'
 import { Library } from './routes/Library'
+import { Likes } from './routes/Likes'
 import { NowPlaying } from './routes/NowPlaying'
 import { PlaylistDetail } from './routes/PlaylistDetail'
 import { Playlists } from './routes/Playlists'
@@ -20,7 +22,7 @@ import { Search } from './routes/Search'
 import { Sessions } from './routes/Sessions'
 import { Settings } from './routes/Settings'
 import { Stats } from './routes/Stats'
-import { useAuth, useDisplayName } from './state/auth'
+import { useAuth } from './state/auth'
 import { Connexion } from './routes/Connexion'
 import { useCurrentSession } from './state/session'
 
@@ -37,6 +39,7 @@ const NAV: { to: string; label: string; section?: string }[] = [
   { to: '/artists', label: 'Artistes', section: 'Bibliothèque' },
   { to: '/genres', label: 'Genres', section: 'Bibliothèque' },
   { to: '/playlists', label: 'Playlists', section: 'Bibliothèque' },
+  { to: '/likes', label: 'Mes likes', section: 'Bibliothèque' },
   { to: '/sessions', label: "Sessions d'écoute" },
   { to: '/settings', label: 'Configuration' },
   { to: '/stats', label: 'Statistiques' },
@@ -87,7 +90,6 @@ export default function App() {
   const [lyricsOpen, setLyricsOpen] = useState(false)
   const [queueOpen, setQueueOpen] = useState(false)
   const { data: session } = useCurrentSession()
-  const name = useDisplayName()
   const auth = useAuth()
   // Masquer l'onglet n'est pas la protection — le serveur refuse les routes
   // par un 403 — mais proposer une page qu'on ne peut pas ouvrir n'aide personne.
@@ -142,9 +144,7 @@ export default function App() {
               </NavLink>
             </div>
           ))}
-          <div className="mt-auto px-2 text-xs text-neutral-600">
-            {name ? `Connecté en tant que ${name}` : 'Pseudo non défini'}
-          </div>
+          <MonCompte />
         </nav>
 
         <main className="min-w-0 flex-1 overflow-y-auto">
@@ -162,6 +162,7 @@ export default function App() {
               <Route path="/artists/:id" element={<Artist />} />
               <Route path="/albums/:id" element={<Album />} />
               <Route path="/genres" element={<Genres />} />
+              <Route path="/likes" element={<Likes />} />
               <Route path="/playlists" element={<Playlists />} />
               <Route path="/playlists/:id" element={<PlaylistDetail />} />
               <Route path="/search" element={<Search />} />

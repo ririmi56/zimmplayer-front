@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dropTarget, moveItem, remapAfterMove } from './queueOrder'
+import { dropTarget, moveItem, remapAfterMove, remapAfterRemove } from './queueOrder'
 
 /**
  * Le serveur retire l'element avant de le reinserer : le rang d'insertion vu a
@@ -62,5 +62,29 @@ describe('remapAfterMove', () => {
   it('une permutation reste une permutation', () => {
     const rangs = [0, 1, 2, 3, 4].map((i) => remapAfterMove(1, 3, i))
     expect([...rangs].sort()).toEqual([0, 1, 2, 3, 4])
+  })
+})
+
+describe('remapAfterRemove', () => {
+  it('decale les rangs situes apres le retrait', () => {
+    expect(remapAfterRemove(1, 2)).toBe(1)
+    expect(remapAfterRemove(1, 5)).toBe(4)
+  })
+
+  it('laisse en place les rangs situes avant', () => {
+    expect(remapAfterRemove(3, 0)).toBe(0)
+    expect(remapAfterRemove(3, 2)).toBe(2)
+  })
+
+  it("signale l'element retire lui-meme", () => {
+    expect(remapAfterRemove(2, 2)).toBeNull()
+  })
+
+  it('reste coherent applique a tout un ordre aleatoire', () => {
+    const ordre = [3, 0, 4, 1, 2]
+    const apres = ordre.map((i) => remapAfterRemove(1, i)).filter((i) => i !== null)
+    // Le rang 1 disparait, les rangs superieurs reculent d'un cran, et
+    // l'ordre relatif des survivants ne bouge pas.
+    expect(apres).toEqual([2, 0, 3, 1])
   })
 })

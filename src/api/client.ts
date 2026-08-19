@@ -66,7 +66,7 @@ export type Page<T> = { items: T[]; total: number; limit: number; offset: number
  * openapi-typescript. Doit rester aligne sur `AlbumSort` cote API
  * (app/api/catalog.py) — une valeur inconnue s'y solde par un 422.
  */
-export type AlbumSort = 'artiste' | 'titre' | 'annee' | 'ajout' | 'genre'
+export type AlbumSort = 'artiste' | 'titre' | 'annee' | 'ajout' | 'genre' | 'likes'
 
 /** Pseudo courant, lu au moment de l'appel pour suivre les changements. */
 let userName = 'anonyme'
@@ -121,6 +121,8 @@ export const api = {
       artistId?: number
       genre?: string
       sort?: AlbumSort
+      /** Retourne le sens naturel du tri, sans en changer la cle. */
+      reverse?: boolean
       /** Defaut du serveur : 100, plafonne a 500. */
       limit?: number
       offset?: number
@@ -131,6 +133,7 @@ export const api = {
     if (params.artistId) search.set('artist_id', String(params.artistId))
     if (params.genre) search.set('genre', params.genre)
     if (params.sort) search.set('sort', params.sort)
+    if (params.reverse) search.set('reverse', 'true')
     if (params.limit != null) search.set('limit', String(params.limit))
     if (params.offset) search.set('offset', String(params.offset))
     return request<Page<Album>>(`/api/albums?${search}`)
@@ -147,6 +150,10 @@ export const api = {
       body: JSON.stringify({ track_id: trackId, seconds }),
     }),
 
+  likes: () => request<number[]>('/api/likes'),
+  likedTracks: () => request<Track[]>('/api/likes/tracks'),
+  like: (trackId: number) => request<void>(`/api/likes/${trackId}`, { method: 'PUT' }),
+  unlike: (trackId: number) => request<void>(`/api/likes/${trackId}`, { method: 'DELETE' }),
   playlists: () => request<Playlist[]>('/api/playlists'),
   playlist: (id: number) => request<PlaylistDetail>(`/api/playlists/${id}`),
   createPlaylist: (name: string) =>
@@ -155,6 +162,11 @@ export const api = {
     request<PlaylistDetail>(`/api/playlists/${id}`, {
       method: 'PATCH',
       body: JSON.stringify({ name }),
+    }),
+  setPlaylistPublic: (id: number, isPublic: boolean) =>
+    request<PlaylistDetail>(`/api/playlists/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ is_public: isPublic }),
     }),
   deletePlaylist: (id: number) => request<void>(`/api/playlists/${id}`, { method: 'DELETE' }),
   addToPlaylist: (id: number, body: { track_ids?: number[]; album_id?: number }) =>

@@ -9,9 +9,19 @@ export const ICONS = {
   mute: 'M11 5 6 9H2v6h4l5 4zM22 9l-6 6M16 9l6 6',
   lyrics: 'M4 6h16M4 10h16M4 14h10M4 18h7',
   queue: 'M4 7h11M4 12h11M4 17h7M17 12v7M17 12l4-2v7',
-  playlistAdd: 'M4 6h11M4 12h11M4 18h7M17 15v6M14 18h6',
-  queueAdd: 'M4 6h13M4 11h13M4 16h8M17 17h6M20 14v6',
+  // Les deux ajouts doivent se distinguer d'un coup d'oeil a 16 px : d'ou un
+  // marque-page pour la playlist, qui se garde, et le triangle de lecture pour
+  // la file, qui dit « a jouer ensuite ». Trois traits + « + » pour les deux,
+  // comme avant, les rendait indiscernables.
+  playlistAdd: 'M6 3.5h7a1 1 0 011 1v12.5l-4.5-3.1L5 17V4.5a1 1 0 011-1zM18 14.5v6M15 17.5h6',
+  queueAdd: 'M4 6h13M4 11h13M4 16h8M16 14.5l5.5 3.2-5.5 3.2z',
+  // Contour quand le titre n'est pas aime, rempli quand il l'est : c'est le
+  // meme trace, `Icon` s'occupe du remplissage.
+  heart: 'M12 20.5 4.2 12.9a4.6 4.6 0 0 1 6.5-6.5l1.3 1.3 1.3-1.3a4.6 4.6 0 1 1 6.5 6.5z',
   headphones: 'M4 14v-2a8 8 0 0116 0v2M4 14h3v6H4zM17 14h3v6h-3z',
+  // Deux fleches opposees : le bouton retourne le sens du tri en cours.
+  kebab: 'M12 5.5h.01M12 12h.01M12 18.5h.01',
+  reverse: 'M7 20V4M7 4 4 7.5M7 4l3 3.5M17 4v16M17 20l-3-3.5M17 20l3-3.5',
   dragHandle: 'M5 9h14M5 15h14',
   edit: 'M4 20h4L20 8l-4-4L4 16zM14 6l4 4',
 }
