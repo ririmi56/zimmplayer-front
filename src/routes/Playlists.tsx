@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { api } from '../api/client'
+import { api, type Playlist } from '../api/client'
 
 /**
- * Mes playlists, et celles qu'on m'a partagees.
+ * Mes playlists, celles qu'on m'a partagees, et les publiques.
  *
  * Une playlist n'est pas une file : la file est ce qui joue maintenant et se
  * vide en avancant, une playlist se garde. Elles ne se rejoignent qu'au moment
@@ -25,7 +25,13 @@ export function Playlists() {
 
   const liste = playlists.data ?? []
   const miennes = liste.filter((p) => p.is_owner)
-  const partagees = liste.filter((p) => !p.is_owner)
+  const recues = liste.filter((p) => !p.is_owner)
+  // Publique ET partagee en edition : elle reste dans « Partagées avec moi »,
+  // le partage nomme est le lien le plus fort. Publique et partagee en simple
+  // consultation, en revanche, sont indiscernables d'ici : l'API ne dit pas
+  // d'ou vient le droit, et l'afficher en double n'apprendrait rien.
+  const publiques = recues.filter((p) => p.is_public && !p.can_edit)
+  const partagees = recues.filter((p) => !p.is_public || p.can_edit)
 
   return (
     <>
@@ -65,6 +71,7 @@ export function Playlists() {
 
       <Groupe titre="Les miennes" playlists={miennes} />
       <Groupe titre="Partagées avec moi" playlists={partagees} />
+      <Groupe titre="Publiques" playlists={publiques} />
     </>
   )
 }
@@ -74,7 +81,7 @@ function Groupe({
   playlists,
 }: {
   titre: string
-  playlists: { id: number; name: string; owner_name: string; is_owner: boolean; can_edit: boolean; track_count: number }[]
+  playlists: Playlist[]
 }) {
   if (playlists.length === 0) return null
   return (
@@ -98,7 +105,7 @@ function Groupe({
               </div>
               {!playlist.is_owner && (
                 <span className="shrink-0 rounded-full border border-neutral-700 px-2 py-0.5 text-xs text-neutral-400">
-                  {playlist.can_edit ? 'lecture et écriture' : 'lecture seule'}
+                  {playlist.can_edit ? 'Édition' : 'Consultation'}
                 </span>
               )}
             </Link>

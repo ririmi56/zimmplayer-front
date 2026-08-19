@@ -37,3 +37,18 @@ export function remapAfterMove(from: number, to: number, i: number): number {
   const afterRemoval = i - (i > from ? 1 : 0)
   return afterRemoval + (afterRemoval >= to ? 1 : 0)
 }
+
+
+/**
+ * Ou se retrouve l'element qui etait au rang `i`, apres avoir retire celui de
+ * `removed`. `null` si c'est lui qu'on retire.
+ *
+ * Meme raison d'etre que `remapAfterMove` : le lecteur local garde le titre
+ * courant dans `index` et l'ordre aleatoire dans `order`, tous deux exprimes
+ * en rangs de `queue`. Sans ce remappage, retirer un titre place avant le
+ * titre courant ferait sauter la lecture d'un cran.
+ */
+export function remapAfterRemove(removed: number, i: number): number | null {
+  if (i === removed) return null
+  return i > removed ? i - 1 : i
+}

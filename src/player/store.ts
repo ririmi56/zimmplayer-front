@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { Track } from '../api/client'
-import { moveItem, remapAfterMove } from '../components/queueOrder'
+import { moveItem, remapAfterMove, remapAfterRemove } from '../components/queueOrder'
 
 export type RepeatMode = 'off' | 'all' | 'one'
 
@@ -22,6 +22,7 @@ type PlayerState = {
   playNow: (track: Track) => void
   enqueue: (tracks: Track[]) => void
   move: (from: number, to: number) => void
+  remove: (position: number) => void
   togglePlay: () => void
   next: (auto?: boolean) => void
   previous: () => void
@@ -92,6 +93,49 @@ export const usePlayer = create<PlayerState>((set, get) => ({
       queue: moveItem(queue, from, to),
       index: remapAfterMove(from, to, index),
       order: order.map((i) => remapAfterMove(from, to, i)),
+    })
+  },
+
+  /**
+   * Retire un titre de la file.
+   *
+   * Meme remappage que `move` : `index` et `order` designent des rangs de
+   * `queue`. Retirer le titre EN COURS enchaine sur le suivant dans l'ordre de
+   * lecture, comme le fait le serveur pour une file partagee
+   * (`queue.remove_item`) ; en bout de file il n'y a rien a enchainer, et la
+   * lecture s'arrete. On ne reboucle pas, meme en repeat : retirer un titre
+   * n'est pas la fin d'un morceau.
+   */
+  remove: (position) => {
+    const { queue, index, order, shuffle, isPlaying } = get()
+    if (position < 0 || position >= queue.length) return
+
+    const nextQueue = queue.filter((_, i) => i !== position)
+    const nextOrder = order
+      .map((i) => remapAfterRemove(position, i))
+      .filter((i): i is number => i !== null)
+
+    if (nextQueue.length === 0) {
+      return set({ queue: [], index: 0, order: [], isPlaying: false, currentTime: 0, duration: 0 })
+    }
+
+    if (position !== index) {
+      return set({
+        queue: nextQueue,
+        order: nextOrder,
+        index: remapAfterRemove(position, index)!,
+      })
+    }
+
+    const positions = shuffle && order.length === queue.length ? order : queue.map((_, i) => i)
+    const suivant = positions[positions.indexOf(position) + 1]
+    set({
+      queue: nextQueue,
+      order: nextOrder,
+      index: suivant === undefined ? 0 : remapAfterRemove(position, suivant)!,
+      isPlaying: suivant !== undefined && isPlaying,
+      currentTime: 0,
+      duration: 0,
     })
   },
 

@@ -5,6 +5,7 @@ import { useNowPlaying } from '../player/nowPlaying'
 import { useCurrentSession, useEnqueue, usePlayNowInSession } from '../state/session'
 import { useIdentity } from '../state/identity'
 import { AddToPlaylist } from './AddToPlaylist'
+import { LikeButton } from './LikeButton'
 import { formatDuration } from './format'
 
 type Props = {
@@ -76,6 +77,9 @@ export function TrackList({ tracks, showAlbum = false, onEdit }: Props) {
                 <Icon path={ICONS.queueAdd} className="h-4 w-4" />
               </button>
             )}
+            {/* Toujours visible, contrairement aux autres actions : un coeur
+                qui n'apparait qu'au survol ne dit plus ce qu'on aime. */}
+            <LikeButton trackId={track.id} />
             <AddToPlaylist
               trackIds={[track.id]}
               className="text-neutral-500 opacity-0 hover:text-emerald-400 group-hover:opacity-100"

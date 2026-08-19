@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { Album } from '../api/client'
+import { AlbumMenu } from './AlbumMenu'
 import { Cover } from './Cover'
 
 export function AlbumGrid({ albums }: { albums: Album[] }) {
@@ -13,7 +14,7 @@ export function AlbumGrid({ albums }: { albums: Album[] }) {
         <Link
           key={album.id}
           to={`/albums/${album.id}`}
-          className="group rounded-lg p-2 transition hover:bg-neutral-800/50"
+          className="group relative rounded-lg p-2 transition hover:bg-neutral-800/50"
         >
           <Cover
             albumId={album.id}
@@ -21,6 +22,9 @@ export function AlbumGrid({ albums }: { albums: Album[] }) {
             className="mb-2 aspect-square w-full rounded shadow-lg"
             alt={album.title}
           />
+          {/* Se place lui-meme sur la pochette : il doit se reperer par
+              rapport a la vignette, pas par rapport a un coin. */}
+          <AlbumMenu albumId={album.id} albumTitle={album.title} />
           <div className="truncate text-sm font-medium text-neutral-100">{album.title}</div>
           <div className="truncate text-xs text-neutral-500">
             {album.year ? `${album.year} · ` : ''}

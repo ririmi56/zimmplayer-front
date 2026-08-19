@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, type Person, type PlaylistDetail as Detail } from '../api/client'
 import { Cover } from '../components/Cover'
+import { LikeButton } from '../components/LikeButton'
 import { formatDuration } from '../components/format'
 import { dropTarget } from '../components/queueOrder'
 import { ICONS, Icon } from '../player/icons'
@@ -84,7 +85,8 @@ export function PlaylistDetail() {
           <p className="mt-1 text-sm text-neutral-500">
             {data.track_count} titre{data.track_count > 1 ? 's' : ''}
             {!data.is_owner && ` · de ${data.owner_name}`}
-            {!data.is_owner && !data.can_edit && ' · lecture seule'}
+            {!data.is_owner && !data.can_edit && ' · consultation'}
+            {data.is_public && ' · publique'}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -153,6 +155,7 @@ export function PlaylistDetail() {
                   {item.added_by && !data.is_owner && ` · ajouté par ${item.added_by}`}
                 </div>
               </div>
+              <LikeButton trackId={item.track.id} />
               <span className="shrink-0 text-xs tabular-nums text-neutral-600">
                 {formatDuration(item.track.duration_s)}
               </span>
@@ -272,11 +275,17 @@ function Lecture({ tracks }: { tracks: Detail['items'][number]['track'][] }) {
 /**
  * Partage, reserve au proprietaire.
  *
- * Partager en ecriture sert a composer a plusieurs, pas a se transmettre la
- * playlist : renommer, supprimer et partager restent au proprietaire.
+ * Partager en edition sert a composer a plusieurs, pas a se transmettre la
+ * playlist : renommer, supprimer et partager restent au proprietaire. Et
+ * publier ne partage qu'en consultation — ouvrir l'edition a tout le monde
+ * laisserait n'importe qui vider la playlist sans qu'on sache d'ou ca vient.
  */
 function Partage({ playlist, onDone }: { playlist: Detail; onDone: () => void }) {
   const people = useQuery({ queryKey: ['people'], queryFn: api.people })
+  const publier = useMutation({
+    mutationFn: (isPublic: boolean) => api.setPlaylistPublic(playlist.id, isPublic),
+    onSuccess: onDone,
+  })
   const partager = useMutation({
     mutationFn: ({ userId, canEdit }: { userId: number; canEdit: boolean }) =>
       api.sharePlaylist(playlist.id, userId, canEdit),
@@ -298,9 +307,26 @@ function Partage({ playlist, onDone }: { playlist: Detail; onDone: () => void })
         Partage
       </h2>
       <p className="mb-3 text-xs text-neutral-500">
-        En lecture seule, la personne voit la playlist. En lecture et écriture, elle peut aussi y
+        En consultation, la personne voit la playlist et l’écoute. En édition, elle peut aussi y
         ajouter et en retirer des titres — mais pas la renommer, la supprimer ni la repartager.
       </p>
+
+      <label className="mb-4 flex max-w-xl cursor-pointer items-start gap-3 rounded-lg border border-neutral-800 px-4 py-3 hover:border-neutral-700">
+        <input
+          type="checkbox"
+          checked={playlist.is_public}
+          disabled={publier.isPending}
+          onChange={(event) => publier.mutate(event.target.checked)}
+          className="mt-0.5 h-4 w-4 shrink-0 accent-emerald-500"
+        />
+        <span className="min-w-0">
+          <span className="block text-sm text-neutral-100">Playlist publique</span>
+          <span className="block text-xs text-neutral-500">
+            Tout le monde la trouve dans l’onglet Playlists et peut l’écouter, en consultation
+            seulement. Les partages ci-dessous restent les seuls à donner l’édition.
+          </span>
+        </span>
+      </label>
 
       {playlist.shares.length > 0 && (
         <ul className="mb-3 divide-y divide-neutral-800 rounded-lg border border-neutral-800">
@@ -308,17 +334,17 @@ function Partage({ playlist, onDone }: { playlist: Detail; onDone: () => void })
             <li key={share.user_id} className="flex items-center gap-3 px-4 py-2">
               <span className="min-w-0 flex-1 truncate text-sm text-neutral-100">{share.name}</span>
               <select
-                value={share.can_edit ? 'ecriture' : 'lecture'}
+                value={share.can_edit ? 'editer' : 'consulter'}
                 onChange={(event) =>
                   partager.mutate({
                     userId: share.user_id,
-                    canEdit: event.target.value === 'ecriture',
+                    canEdit: event.target.value === 'editer',
                   })
                 }
                 className="rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs text-neutral-100 focus:border-neutral-500 focus:outline-none"
               >
-                <option value="lecture">Lecture seule</option>
-                <option value="ecriture">Lecture et écriture</option>
+                <option value="consulter">Consulter</option>
+                <option value="editer">Éditer</option>
               </select>
               <button
                 onClick={() => retirer.mutate(share.user_id)}
