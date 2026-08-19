@@ -394,6 +394,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Global Stats
+         * @description Ce que contient le serveur, et ce qui y a ete ecoute. Visible par tous.
+         */
+        get: operations["global_stats_api_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stats/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * User Stats
+         * @description Ecoutes et ajouts par personne. Reserve aux administrateurs.
+         *
+         *     C'est le seul endroit ou l'activite de quelqu'un est visible par un autre :
+         *     la route est donc gardee, et non simplement l'onglet qui l'affiche.
+         */
+        get: operations["user_stats_api_stats_users_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stats/listens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report Listen
+         * @description Ecoute solo, annoncee par le navigateur.
+         *
+         *     Hors session, l'API ne voit passer qu'une redirection vers le stockage :
+         *     elle ne peut pas savoir ce qui a ete ecoute, ni combien de temps. Seul le
+         *     navigateur le sait, d'ou cette annonce.
+         *
+         *     Les valeurs viennent donc du client et sont verifiees ici : la duree est
+         *     bornee par celle du titre, et le seuil est reapplique. Cela n'empeche pas
+         *     un client de mentir dans ces bornes — le compteur n'est pas une preuve.
+         */
+        post: operations["report_listen_api_stats_listens_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tracks/{track_id}/stream": {
         parameters: {
             query?: never;
@@ -460,7 +531,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Session */
+        /**
+         * Get Session
+         * @description Detail d'une session, et seul signal d'appartenance dont on dispose.
+         *
+         *     Le navigateur interroge cette route en boucle tant qu'il suit une session,
+         *     et seulement celle-la : c'est ce qui permet au serveur de savoir qui
+         *     ecoute, information qui ne vivait jusqu'ici que dans le navigateur. Voir
+         *     services/stats.marquer_present pour l'approximation que cela represente.
+         */
         get: operations["get_session_api_sessions__session_id__get"];
         put?: never;
         post?: never;
@@ -1014,10 +1093,36 @@ export interface components {
             /** Is Super Admin */
             is_super_admin: boolean;
         };
+        /** CatalogueStats */
+        CatalogueStats: {
+            /** Tracks */
+            tracks: number;
+            /** Albums */
+            albums: number;
+            /** Artists */
+            artists: number;
+            /** Total Seconds */
+            total_seconds: number;
+            /** Total Bytes */
+            total_bytes: number;
+            /** Tracks Without Duration */
+            tracks_without_duration: number;
+            /** Formats */
+            formats: components["schemas"]["FormatCount"][];
+            /** Genres */
+            genres: components["schemas"]["FormatCount"][];
+        };
         /** ClientsUpdate */
         ClientsUpdate: {
             /** Client Ids */
             client_ids: string[];
+        };
+        /** FormatCount */
+        FormatCount: {
+            /** Label */
+            label: string;
+            /** Count */
+            count: number;
         };
         /** GenreOut */
         GenreOut: {
@@ -1028,10 +1133,37 @@ export interface components {
             /** Track Count */
             track_count: number;
         };
+        /** GlobalStats */
+        GlobalStats: {
+            catalogue: components["schemas"]["CatalogueStats"];
+            listening: components["schemas"]["ListeningStats"];
+            /** Top Tracks */
+            top_tracks: components["schemas"]["TopTrack"][];
+            /** Sessions */
+            sessions: components["schemas"]["SessionStats"][];
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** ListenReport */
+        ListenReport: {
+            /** Track Id */
+            track_id: number;
+            /** Seconds */
+            seconds: number;
+        };
+        /** ListeningStats */
+        ListeningStats: {
+            /** Listens */
+            listens: number;
+            /** Seconds */
+            seconds: number;
+            /** Distinct Tracks */
+            distinct_tracks: number;
+            /** Queue Additions */
+            queue_additions: number;
         };
         /** LyricsOut */
         LyricsOut: {
@@ -1307,6 +1439,21 @@ export interface components {
              */
             item_count: number;
         };
+        /** SessionStats */
+        SessionStats: {
+            /** Name */
+            name: string;
+            /** Listens */
+            listens: number;
+            /** Seconds */
+            seconds: number;
+            /** Listeners */
+            listeners: number;
+            /** Last Listen At */
+            last_listen_at: string | null;
+            /** Still Open */
+            still_open: boolean;
+        };
         /** ShareUpdate */
         ShareUpdate: {
             /**
@@ -1333,6 +1480,17 @@ export interface components {
         StreamUpdate: {
             /** Stream Id */
             stream_id: string;
+        };
+        /** TopTrack */
+        TopTrack: {
+            /** Track Id */
+            track_id: number;
+            /** Title */
+            title: string;
+            /** Artist Name */
+            artist_name: string;
+            /** Listens */
+            listens: number;
         };
         /** TrackOut */
         TrackOut: {
@@ -1409,6 +1567,21 @@ export interface components {
              * Format: date-time
              */
             last_seen_at: string;
+        };
+        /** UserStats */
+        UserStats: {
+            /** User Id */
+            user_id: number;
+            /** Name */
+            name: string;
+            /** Listens */
+            listens: number;
+            /** Seconds */
+            seconds: number;
+            /** Queue Additions */
+            queue_additions: number;
+            /** Last Listen At */
+            last_listen_at: string | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -2259,6 +2432,101 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["PlaylistDetail"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    global_stats_api_stats_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GlobalStats"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    user_stats_api_stats_users_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserStats"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_listen_api_stats_listens_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ListenReport"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
