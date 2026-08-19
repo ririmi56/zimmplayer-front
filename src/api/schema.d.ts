@@ -4,6 +4,125 @@
  */
 
 export interface paths {
+    "/api/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Login
+         * @description Envoie le navigateur chez le fournisseur.
+         */
+        get: operations["login_api_auth_login_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Callback
+         * @description Retour du fournisseur. Redirige toujours vers l'application, pas de JSON.
+         *
+         *     C'est le navigateur qui arrive ici, pas le code de l'interface : une erreur
+         *     doit rester lisible dans la page, d'ou le passage par un parametre plutot
+         *     qu'un corps d'erreur que personne n'afficherait.
+         */
+        get: operations["callback_api_auth_callback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Me
+         * @description Qui je suis, et comment l'application authentifie.
+         *
+         *     Toujours 200, jamais 401 : l'interface a besoin de savoir s'il faut
+         *     proposer une connexion, ce qu'un code d'erreur ne dirait pas.
+         */
+        get: operations["me_api_auth_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Logout
+         * @description Ferme la session locale, et indique ou poursuivre chez le fournisseur.
+         *
+         *     La deconnexion globale reste au choix de l'interface : sur un poste
+         *     partage on la veut, sur un poste personnel elle obligerait a ressaisir
+         *     son mot de passe partout.
+         */
+        post: operations["logout_api_auth_logout_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List People
+         * @description Les personnes connues, pour choisir avec qui partager une playlist.
+         *
+         *     Accessible a tout le monde et non aux seuls administrateurs : sans elle,
+         *     personne ne pourrait partager. On n'expose que le nom et le courriel, soit
+         *     ce qu'un carnet d'adresses montrerait — ni les groupes, ni le role, ni la
+         *     date de derniere venue.
+         *
+         *     On ne connait que les personnes deja passees : aucune API OIDC standard ne
+         *     permet de lister les comptes d'un fournisseur.
+         */
+        get: operations["list_people_api_users_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/artists": {
         parameters: {
             query?: never;
@@ -148,6 +267,204 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/playlists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Playlists
+         * @description Les miennes et celles qu'on m'a partagees, les plus recentes d'abord.
+         */
+        get: operations["list_playlists_api_playlists_get"];
+        put?: never;
+        /** Create Playlist */
+        post: operations["create_playlist_api_playlists_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/playlists/{playlist_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Playlist */
+        get: operations["get_playlist_api_playlists__playlist_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Playlist */
+        delete: operations["delete_playlist_api_playlists__playlist_id__delete"];
+        options?: never;
+        head?: never;
+        /** Rename Playlist */
+        patch: operations["rename_playlist_api_playlists__playlist_id__patch"];
+        trace?: never;
+    };
+    "/api/playlists/{playlist_id}/tracks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Tracks
+         * @description Ajoute des titres, ou tout un album, a la suite.
+         *
+         *     Les doublons sont acceptes : mettre deux fois le meme titre est parfois
+         *     voulu, et l'interdire surprendrait plus que ca n'aiderait.
+         */
+        post: operations["add_tracks_api_playlists__playlist_id__tracks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/playlists/{playlist_id}/tracks/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Track */
+        delete: operations["remove_track_api_playlists__playlist_id__tracks__item_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/playlists/{playlist_id}/tracks/{item_id}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move Track
+         * @description Deplace un titre au rang demande.
+         *
+         *     Renumerote toute la playlist plutot que d'echanger deux positions : c'est
+         *     la seule facon de garantir des rangs contigus, y compris apres des retraits
+         *     qui en ont laisse des trous.
+         *
+         *     Reserve a qui peut ecrire : reordonner, c'est modifier la playlist.
+         */
+        post: operations["move_track_api_playlists__playlist_id__tracks__item_id__move_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/playlists/{playlist_id}/shares/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Share
+         * @description Partage la playlist, ou change le droit accorde.
+         */
+        put: operations["set_share_api_playlists__playlist_id__shares__user_id__put"];
+        post?: never;
+        /** Remove Share */
+        delete: operations["remove_share_api_playlists__playlist_id__shares__user_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Global Stats
+         * @description Ce que contient le serveur, et ce qui y a ete ecoute. Visible par tous.
+         */
+        get: operations["global_stats_api_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stats/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * User Stats
+         * @description Ecoutes et ajouts par personne. Reserve aux administrateurs.
+         *
+         *     C'est le seul endroit ou l'activite de quelqu'un est visible par un autre :
+         *     la route est donc gardee, et non simplement l'onglet qui l'affiche.
+         */
+        get: operations["user_stats_api_stats_users_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stats/listens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report Listen
+         * @description Ecoute solo, annoncee par le navigateur.
+         *
+         *     Hors session, l'API ne voit passer qu'une redirection vers le stockage :
+         *     elle ne peut pas savoir ce qui a ete ecoute, ni combien de temps. Seul le
+         *     navigateur le sait, d'ou cette annonce.
+         *
+         *     Les valeurs viennent donc du client et sont verifiees ici : la duree est
+         *     bornee par celle du titre, et le seuil est reapplique. Cela n'empeche pas
+         *     un client de mentir dans ces bornes — le compteur n'est pas une preuve.
+         */
+        post: operations["report_listen_api_stats_listens_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tracks/{track_id}/stream": {
         parameters: {
             query?: never;
@@ -214,7 +531,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Session */
+        /**
+         * Get Session
+         * @description Detail d'une session, et seul signal d'appartenance dont on dispose.
+         *
+         *     Le navigateur interroge cette route en boucle tant qu'il suit une session,
+         *     et seulement celle-la : c'est ce qui permet au serveur de savoir qui
+         *     ecoute, information qui ne vivait jusqu'ici que dans le navigateur. Voir
+         *     services/stats.marquer_present pour l'approximation que cela represente.
+         */
         get: operations["get_session_api_sessions__session_id__get"];
         put?: never;
         post?: never;
@@ -581,6 +906,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Users
+         * @description Les personnes deja connectees, les plus recentes d'abord.
+         *
+         *     Il n'y a personne d'autre a proposer : aucune API OIDC standard ne permet
+         *     de lister les comptes d'un fournisseur. On ne promeut donc que quelqu'un
+         *     qui s'est deja connecte au moins une fois.
+         */
+        get: operations["list_users_api_admin_users_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{user_id}/admin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Admin
+         * @description Accorde ou retire le role d'administrateur.
+         */
+        put: operations["set_admin_api_admin_users__user_id__admin_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -602,6 +971,11 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AdminUpdate */
+        AdminUpdate: {
+            /** Is Admin */
+            is_admin: boolean;
+        };
         /** AlbumDetail */
         AlbumDetail: {
             /** Id */
@@ -697,10 +1071,58 @@ export interface components {
              */
             album_count: number;
         };
+        /**
+         * AuthStatus
+         * @description Ce que l'interface doit savoir pour afficher, ou non, une connexion.
+         */
+        AuthStatus: {
+            /** Oidc Enabled */
+            oidc_enabled: boolean;
+            /** Authenticated */
+            authenticated: boolean;
+            /** Subject */
+            subject: string;
+            /** Name */
+            name: string;
+            /** Email */
+            email: string;
+            /** Groups */
+            groups: string[];
+            /** Role */
+            role: string;
+            /** Is Super Admin */
+            is_super_admin: boolean;
+        };
+        /** CatalogueStats */
+        CatalogueStats: {
+            /** Tracks */
+            tracks: number;
+            /** Albums */
+            albums: number;
+            /** Artists */
+            artists: number;
+            /** Total Seconds */
+            total_seconds: number;
+            /** Total Bytes */
+            total_bytes: number;
+            /** Tracks Without Duration */
+            tracks_without_duration: number;
+            /** Formats */
+            formats: components["schemas"]["FormatCount"][];
+            /** Genres */
+            genres: components["schemas"]["FormatCount"][];
+        };
         /** ClientsUpdate */
         ClientsUpdate: {
             /** Client Ids */
             client_ids: string[];
+        };
+        /** FormatCount */
+        FormatCount: {
+            /** Label */
+            label: string;
+            /** Count */
+            count: number;
         };
         /** GenreOut */
         GenreOut: {
@@ -711,10 +1133,37 @@ export interface components {
             /** Track Count */
             track_count: number;
         };
+        /** GlobalStats */
+        GlobalStats: {
+            catalogue: components["schemas"]["CatalogueStats"];
+            listening: components["schemas"]["ListeningStats"];
+            /** Top Tracks */
+            top_tracks: components["schemas"]["TopTrack"][];
+            /** Sessions */
+            sessions: components["schemas"]["SessionStats"][];
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** ListenReport */
+        ListenReport: {
+            /** Track Id */
+            track_id: number;
+            /** Seconds */
+            seconds: number;
+        };
+        /** ListeningStats */
+        ListeningStats: {
+            /** Listens */
+            listens: number;
+            /** Seconds */
+            seconds: number;
+            /** Distinct Tracks */
+            distinct_tracks: number;
+            /** Queue Additions */
+            queue_additions: number;
         };
         /** LyricsOut */
         LyricsOut: {
@@ -759,6 +1208,99 @@ export interface components {
             limit: number;
             /** Offset */
             offset: number;
+        };
+        /**
+         * PersonOut
+         * @description Une personne connue, telle qu'un selecteur de partage l'affiche.
+         */
+        PersonOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Email */
+            email: string;
+        };
+        /** PlaylistCreate */
+        PlaylistCreate: {
+            /** Name */
+            name: string;
+        };
+        /** PlaylistDetail */
+        PlaylistDetail: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Owner Name */
+            owner_name: string;
+            /** Is Owner */
+            is_owner: boolean;
+            /** Can Edit */
+            can_edit: boolean;
+            /** Track Count */
+            track_count: number;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Items */
+            items: components["schemas"]["PlaylistItemOut"][];
+            /** Shares */
+            shares: components["schemas"]["PlaylistShareOut"][];
+        };
+        /** PlaylistItemOut */
+        PlaylistItemOut: {
+            /** Id */
+            id: number;
+            track: components["schemas"]["TrackOut"];
+            /** Added By */
+            added_by: string | null;
+        };
+        /** PlaylistMove */
+        PlaylistMove: {
+            /** To Index */
+            to_index: number;
+        };
+        /** PlaylistOut */
+        PlaylistOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Owner Name */
+            owner_name: string;
+            /** Is Owner */
+            is_owner: boolean;
+            /** Can Edit */
+            can_edit: boolean;
+            /** Track Count */
+            track_count: number;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** PlaylistShareOut */
+        PlaylistShareOut: {
+            /** User Id */
+            user_id: number;
+            /** Name */
+            name: string;
+            /** Can Edit */
+            can_edit: boolean;
+        };
+        /**
+         * PlaylistTracksAdd
+         * @description Des titres nommes un par un, ou tout un album.
+         */
+        PlaylistTracksAdd: {
+            /** Track Ids */
+            track_ids?: number[] | null;
+            /** Album Id */
+            album_id?: number | null;
         };
         /**
          * QueueAdd
@@ -897,6 +1439,29 @@ export interface components {
              */
             item_count: number;
         };
+        /** SessionStats */
+        SessionStats: {
+            /** Name */
+            name: string;
+            /** Listens */
+            listens: number;
+            /** Seconds */
+            seconds: number;
+            /** Listeners */
+            listeners: number;
+            /** Last Listen At */
+            last_listen_at: string | null;
+            /** Still Open */
+            still_open: boolean;
+        };
+        /** ShareUpdate */
+        ShareUpdate: {
+            /**
+             * Can Edit
+             * @default false
+             */
+            can_edit: boolean;
+        };
         /** SnapcastConfig */
         SnapcastConfig: {
             /** Host */
@@ -915,6 +1480,17 @@ export interface components {
         StreamUpdate: {
             /** Stream Id */
             stream_id: string;
+        };
+        /** TopTrack */
+        TopTrack: {
+            /** Track Id */
+            track_id: number;
+            /** Title */
+            title: string;
+            /** Artist Name */
+            artist_name: string;
+            /** Listens */
+            listens: number;
         };
         /** TrackOut */
         TrackOut: {
@@ -969,6 +1545,44 @@ export interface components {
             /** Disc No */
             disc_no?: number | null;
         };
+        /**
+         * UserOut
+         * @description Une personne deja connectee, telle que la page Administration l'affiche.
+         */
+        UserOut: {
+            /** Id */
+            id: number;
+            /** Subject */
+            subject: string;
+            /** Name */
+            name: string;
+            /** Email */
+            email: string;
+            /** Is Admin */
+            is_admin: boolean;
+            /** Is Super Admin */
+            is_super_admin: boolean;
+            /**
+             * Last Seen At
+             * Format: date-time
+             */
+            last_seen_at: string;
+        };
+        /** UserStats */
+        UserStats: {
+            /** User Id */
+            user_id: number;
+            /** Name */
+            name: string;
+            /** Listens */
+            listens: number;
+            /** Seconds */
+            seconds: number;
+            /** Queue Additions */
+            queue_additions: number;
+            /** Last Listen At */
+            last_listen_at: string | null;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -1001,6 +1615,144 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    login_api_auth_login_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    callback_api_auth_callback_get: {
+        parameters: {
+            query?: {
+                code?: string | null;
+                state?: string | null;
+                error?: string | null;
+                error_description?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    me_api_auth_me_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    logout_api_auth_logout_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string | null;
+                    };
+                };
+            };
+        };
+    };
+    list_people_api_users_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_artists_api_artists_get: {
         parameters: {
             query?: {
@@ -1332,6 +2084,449 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SearchResults"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_playlists_api_playlists_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_playlist_api_playlists_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlaylistCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_playlist_api_playlists__playlist_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path: {
+                playlist_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_playlist_api_playlists__playlist_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path: {
+                playlist_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rename_playlist_api_playlists__playlist_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path: {
+                playlist_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlaylistCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_tracks_api_playlists__playlist_id__tracks_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path: {
+                playlist_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlaylistTracksAdd"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_track_api_playlists__playlist_id__tracks__item_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path: {
+                playlist_id: number;
+                item_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    move_track_api_playlists__playlist_id__tracks__item_id__move_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path: {
+                playlist_id: number;
+                item_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlaylistMove"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_share_api_playlists__playlist_id__shares__user_id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path: {
+                playlist_id: number;
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShareUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_share_api_playlists__playlist_id__shares__user_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path: {
+                playlist_id: number;
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    global_stats_api_stats_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GlobalStats"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    user_stats_api_stats_users_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserStats"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_listen_api_stats_listens_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ListenReport"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -2311,6 +3506,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ScanErrorOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_users_api_admin_users_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_admin_api_admin_users__user_id__admin_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path: {
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
                 };
             };
             /** @description Validation Error */

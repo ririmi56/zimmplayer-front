@@ -1,6 +1,9 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { AlbumGrid } from '../components/AlbumGrid'
+import { AlbumSortSelect } from '../components/AlbumSortSelect'
+import { parseAlbumSort } from '../components/albumSort'
 import { useInfiniteScroll } from '../components/useInfiniteScroll'
 
 /**
@@ -11,9 +14,17 @@ import { useInfiniteScroll } from '../components/useInfiniteScroll'
 const PAGE_SIZE = 60
 
 export function Library() {
+  // Le tri vit dans l'URL : il survit a un aller-retour vers un album, se
+  // partage tel quel, et le bouton « precedent » retrouve la liste telle
+  // qu'elle etait — ce qu'un useState ne donnerait pas.
+  const [params, setParams] = useSearchParams()
+  const sort = parseAlbumSort(params.get('tri'))
+
   const query = useInfiniteQuery({
-    queryKey: ['albums'],
-    queryFn: ({ pageParam }) => api.albums({ limit: PAGE_SIZE, offset: pageParam }),
+    // `sort` dans la cle : sans lui, changer de tri reafficherait les pages
+    // deja en cache, triees a l'ancienne.
+    queryKey: ['albums', sort],
+    queryFn: ({ pageParam }) => api.albums({ sort, limit: PAGE_SIZE, offset: pageParam }),
     initialPageParam: 0,
     // `total` etant renvoye par chaque page, on sait s'arreter sans avoir a
     // deviner d'apres une page incomplete.
@@ -32,11 +43,21 @@ export function Library() {
 
   return (
     <>
-      <header className="mb-6 flex items-baseline justify-between">
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-neutral-100">Bibliothèque</h1>
-        <span className="text-sm text-neutral-500">
-          {albums.length < total ? `${albums.length} sur ${total} albums` : `${total} albums`}
-        </span>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-neutral-500">
+            {albums.length < total ? `${albums.length} sur ${total} albums` : `${total} albums`}
+          </span>
+          <AlbumSortSelect
+            value={sort}
+            onChange={(next) => {
+              // `replace` : changer de tri n'est pas une navigation, l'empiler
+              // obligerait a autant de retours arriere qu'on a essaye de tris.
+              setParams(next === 'artiste' ? {} : { tri: next }, { replace: true })
+            }}
+          />
+        </div>
       </header>
       <AlbumGrid albums={albums} />
       <div ref={sentinel} aria-hidden className="h-px" />

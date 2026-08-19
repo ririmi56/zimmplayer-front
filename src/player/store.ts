@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { Track } from '../api/client'
+import { moveItem, remapAfterMove } from '../components/queueOrder'
 
 export type RepeatMode = 'off' | 'all' | 'one'
 
@@ -20,6 +21,7 @@ type PlayerState = {
   playQueue: (tracks: Track[], startIndex?: number) => void
   playNow: (track: Track) => void
   enqueue: (tracks: Track[]) => void
+  move: (from: number, to: number) => void
   togglePlay: () => void
   next: (auto?: boolean) => void
   previous: () => void
@@ -71,6 +73,26 @@ export const usePlayer = create<PlayerState>((set, get) => ({
     const { queue } = get()
     if (queue.length === 0) return get().playQueue(tracks, 0)
     set({ queue: [...queue, ...tracks] })
+  },
+
+  /**
+   * Reordonne la file sans changer ce qui joue.
+   *
+   * `index` et `order` designent des RANGS de `queue` : les laisser tels quels
+   * apres un deplacement ferait basculer la lecture sur un autre titre, et
+   * l'aleatoire en rejouerait certains en en sautant d'autres. On les remappe
+   * donc tous les deux, ce qui preserve exactement la sequence de lecture — on
+   * a change l'affichage, pas ce qui va suivre.
+   */
+  move: (from, to) => {
+    const { queue, index, order } = get()
+    const valid = (i: number) => i >= 0 && i < queue.length
+    if (from === to || !valid(from) || !valid(to)) return
+    set({
+      queue: moveItem(queue, from, to),
+      index: remapAfterMove(from, to, index),
+      order: order.map((i) => remapAfterMove(from, to, i)),
+    })
   },
 
   togglePlay: () => {

@@ -49,7 +49,24 @@ export type SnapRawResult = {
   server: { groups: { id: string; stream_id: string | null; clients: { id: string }[] }[] }
 }
 export type ScanError = components['schemas']['ScanErrorOut']
+export type AuthStatus = components['schemas']['AuthStatus']
+export type AppUser = components['schemas']['UserOut']
+export type Person = components['schemas']['PersonOut']
+export type Playlist = components['schemas']['PlaylistOut']
+export type PlaylistDetail = components['schemas']['PlaylistDetail']
+export type GlobalStats = components['schemas']['GlobalStats']
+export type UserStats = components['schemas']['UserStats']
 export type Page<T> = { items: T[]; total: number; limit: number; offset: number }
+
+/**
+ * Tris acceptes par GET /api/albums.
+ *
+ * Ecrit a la main, comme les types Snapcast plus haut : `sort` est un
+ * parametre de requete, absent de `components['schemas']` que genere
+ * openapi-typescript. Doit rester aligne sur `AlbumSort` cote API
+ * (app/api/catalog.py) — une valeur inconnue s'y solde par un 422.
+ */
+export type AlbumSort = 'artiste' | 'titre' | 'annee' | 'ajout' | 'genre'
 
 /** Pseudo courant, lu au moment de l'appel pour suivre les changements. */
 let userName = 'anonyme'
@@ -103,6 +120,7 @@ export const api = {
       q?: string
       artistId?: number
       genre?: string
+      sort?: AlbumSort
       /** Defaut du serveur : 100, plafonne a 500. */
       limit?: number
       offset?: number
@@ -112,10 +130,61 @@ export const api = {
     if (params.q) search.set('q', params.q)
     if (params.artistId) search.set('artist_id', String(params.artistId))
     if (params.genre) search.set('genre', params.genre)
+    if (params.sort) search.set('sort', params.sort)
     if (params.limit != null) search.set('limit', String(params.limit))
     if (params.offset) search.set('offset', String(params.offset))
     return request<Page<Album>>(`/api/albums?${search}`)
   },
+  authStatus: () => request<AuthStatus>('/api/auth/me'),
+  users: () => request<AppUser[]>('/api/admin/users'),
+  people: () => request<Person[]>('/api/users'),
+
+  stats: () => request<GlobalStats>('/api/stats'),
+  userStats: () => request<UserStats[]>('/api/stats/users'),
+  reportListen: (trackId: number, seconds: number) =>
+    request<void>('/api/stats/listens', {
+      method: 'POST',
+      body: JSON.stringify({ track_id: trackId, seconds }),
+    }),
+
+  playlists: () => request<Playlist[]>('/api/playlists'),
+  playlist: (id: number) => request<PlaylistDetail>(`/api/playlists/${id}`),
+  createPlaylist: (name: string) =>
+    request<PlaylistDetail>('/api/playlists', { method: 'POST', body: JSON.stringify({ name }) }),
+  renamePlaylist: (id: number, name: string) =>
+    request<PlaylistDetail>(`/api/playlists/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ name }),
+    }),
+  deletePlaylist: (id: number) => request<void>(`/api/playlists/${id}`, { method: 'DELETE' }),
+  addToPlaylist: (id: number, body: { track_ids?: number[]; album_id?: number }) =>
+    request<PlaylistDetail>(`/api/playlists/${id}/tracks`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  movePlaylistTrack: (id: number, itemId: number, toIndex: number) =>
+    request<PlaylistDetail>(`/api/playlists/${id}/tracks/${itemId}/move`, {
+      method: 'POST',
+      body: JSON.stringify({ to_index: toIndex }),
+    }),
+  removeFromPlaylist: (id: number, itemId: number) =>
+    request<PlaylistDetail>(`/api/playlists/${id}/tracks/${itemId}`, { method: 'DELETE' }),
+  sharePlaylist: (id: number, userId: number, canEdit: boolean) =>
+    request<PlaylistDetail>(`/api/playlists/${id}/shares/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ can_edit: canEdit }),
+    }),
+  unsharePlaylist: (id: number, userId: number) =>
+    request<PlaylistDetail>(`/api/playlists/${id}/shares/${userId}`, { method: 'DELETE' }),
+  setUserAdmin: (id: number, isAdmin: boolean) =>
+    request<AppUser>(`/api/admin/users/${id}/admin`, {
+      method: 'PUT',
+      body: JSON.stringify({ is_admin: isAdmin }),
+    }),
+  logout: () => request<{ provider_logout_url: string | null }>('/api/auth/logout', {
+    method: 'POST',
+  }),
+
   genres: () => request<Genre[]>('/api/genres'),
   lyrics: (trackId: number) => request<Lyrics>(`/api/tracks/${trackId}/lyrics`),
   album: (id: number) => request<AlbumDetail>(`/api/albums/${id}`),

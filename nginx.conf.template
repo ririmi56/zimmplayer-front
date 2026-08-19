@@ -1,7 +1,10 @@
 # Modele traite par `envsubst` au demarrage du conteneur nginx (mecanisme
-# integre a l'image officielle, voir /docker-entrypoint.d/) : ${API_UPSTREAM}
-# et ${MINIO_UPSTREAM} sont remplaces par la valeur des variables
-# d'environnement du meme nom avant que nginx ne charge la configuration.
+# integre a l'image officielle, voir /docker-entrypoint.d/) : ${API_UPSTREAM},
+# ${MINIO_UPSTREAM}, ${PROXY_SSL_VERIFY} et ${PROXY_SSL_CA_FILE} sont remplaces
+# par la valeur des variables d'environnement du meme nom avant que nginx ne
+# charge la configuration. Toutes ont un defaut dans le Dockerfile : une
+# variable non definie deviendrait la chaine vide, et une directive vide est
+# une erreur de syntaxe qui empeche nginx de demarrer.
 # Sans danger pour les variables nginx ($http_host, $scheme...) : envsubst ne
 # touche que les noms qui existent reellement comme variables d'environnement
 # du conteneur, ce qui exclut celles-la.
@@ -20,6 +23,16 @@ server {
     # Les pochettes et surtout les fichiers audio sont volumineux.
     client_max_body_size 1m;
     proxy_http_version 1.1;
+
+    # Upstreams joints en https — typiquement MinIO, sur un reseau ou tout est
+    # chiffre. nginx ne verifie RIEN par defaut (`proxy_ssl_verify off`) : on
+    # conserve ce defaut, qui n'a aucun effet tant que les upstreams sont en
+    # clair, mais l'activation ne demande plus de reconstruire l'image.
+    # En airgap : PROXY_SSL_VERIFY=on et PROXY_SSL_CA_FILE=<autorite maison>,
+    # montee dans ce conteneur.
+    proxy_ssl_server_name on;
+    proxy_ssl_verify ${PROXY_SSL_VERIFY};
+    proxy_ssl_trusted_certificate ${PROXY_SSL_CA_FILE};
 
     # API.
     location /api/ {
