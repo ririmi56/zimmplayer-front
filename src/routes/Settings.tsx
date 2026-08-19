@@ -4,6 +4,7 @@ import { api, type SnapcastConfig } from '../api/client'
 import { SnapMembers } from '../components/SnapMembers'
 import { useSnapclient } from '../snapcast/useSnapclient'
 import { useIdentity } from '../state/identity'
+import { useAuth } from '../state/auth'
 
 export function Settings() {
   const { name, setName } = useIdentity()
@@ -14,31 +15,7 @@ export function Settings() {
     <div className="max-w-3xl space-y-10">
       <h1 className="text-2xl font-semibold text-neutral-100">Configuration</h1>
 
-      <section>
-        <h2 className="mb-1 text-sm font-medium uppercase tracking-wide text-neutral-400">
-          Mon identité
-        </h2>
-        <p className="mb-3 text-xs text-neutral-500">
-          Ce pseudo apparaît à côté des titres que vous ajoutez à une file partagée. Il est
-          conservé dans ce navigateur.
-        </p>
-        <div className="flex gap-2">
-          <input
-            value={draftName}
-            onChange={(e) => setDraftName(e.target.value)}
-            onBlur={() => setName(draftName.trim())}
-            placeholder="Votre pseudo"
-            maxLength={60}
-            className="w-64 rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 focus:border-neutral-500 focus:outline-none"
-          />
-          <button
-            onClick={() => setName(draftName.trim())}
-            className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-medium text-neutral-950 hover:bg-emerald-400"
-          >
-            Enregistrer
-          </button>
-        </div>
-      </section>
+      <Identite draftName={draftName} setDraftName={setDraftName} onSave={setName} />
 
       <SnapcastServer />
 
@@ -231,5 +208,110 @@ function LocalListening() {
         </>
       )}
     </section>
+  )
+}
+
+
+/**
+ * Mon identite : saisie libre, ou imposee par le fournisseur.
+ *
+ * Les deux cas ne different pas seulement par l'affichage. Avec OIDC, le nom
+ * n'est plus modifiable ici parce qu'il n'est plus modifiable du tout : c'est
+ * le jeton qui fait foi, et l'API a cesse de lire l'en-tete X-User-Name.
+ */
+function Identite({
+  draftName,
+  setDraftName,
+  onSave,
+}: {
+  draftName: string
+  setDraftName: (name: string) => void
+  onSave: (name: string) => void
+}) {
+  const auth = useAuth()
+
+  if (auth.oidc_enabled) {
+    return (
+      <section>
+        <h2 className="mb-1 text-sm font-medium uppercase tracking-wide text-neutral-400">
+          Mon identité
+        </h2>
+        <p className="mb-3 text-xs text-neutral-500">
+          Fournie par l’authentification de votre organisation. Elle apparaît à côté des titres
+          que vous ajoutez à une file partagée.
+        </p>
+        <dl className="max-w-md space-y-2 rounded-lg border border-neutral-800 bg-neutral-900/60 px-4 py-3 text-sm">
+          <Ligne label="Nom" valeur={auth.name} />
+          {auth.email && <Ligne label="Courriel" valeur={auth.email} />}
+          <Ligne label="Rôle" valeur={auth.role === 'admin' ? 'Administrateur' : 'Utilisateur'} />
+          <Ligne
+            label="Groupes"
+            valeur={auth.groups.length > 0 ? auth.groups.join(', ') : 'aucun'}
+          />
+          {/* L'identifiant du fournisseur est opaque et sans interet au
+              quotidien, mais c'est LA valeur a citer pour diagnostiquer un
+              probleme de compte : on la garde, en retrait. */}
+          <Ligne label="Identifiant" valeur={auth.subject} discret />
+        </dl>
+        <button
+          onClick={async () => {
+            const { provider_logout_url } = await api.logout()
+            // Le fournisseur n'expose pas toujours de deconnexion globale :
+            // sans elle, fermer la session locale est tout ce qu'on peut faire.
+            location.href = provider_logout_url ?? '/'
+          }}
+          className="mt-4 rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-200 hover:border-neutral-500"
+        >
+          Se déconnecter
+        </button>
+      </section>
+    )
+  }
+
+  return (
+    <section>
+      <h2 className="mb-1 text-sm font-medium uppercase tracking-wide text-neutral-400">
+        Mon identité
+      </h2>
+      <p className="mb-3 text-xs text-neutral-500">
+        Ce pseudo apparaît à côté des titres que vous ajoutez à une file partagée. Il est
+        conservé dans ce navigateur.
+      </p>
+      <div className="flex gap-2">
+        <input
+          value={draftName}
+          onChange={(e) => setDraftName(e.target.value)}
+          onBlur={() => onSave(draftName.trim())}
+          placeholder="Votre pseudo"
+          maxLength={60}
+          className="w-64 rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 focus:border-neutral-500 focus:outline-none"
+        />
+        <button
+          onClick={() => onSave(draftName.trim())}
+          className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-medium text-neutral-950 hover:bg-emerald-400"
+        >
+          Enregistrer
+        </button>
+      </div>
+    </section>
+  )
+}
+
+function Ligne({
+  label,
+  valeur,
+  discret = false,
+}: {
+  label: string
+  valeur: string
+  discret?: boolean
+}) {
+  return (
+    <div className="flex gap-3">
+      <dt className="w-24 shrink-0 text-neutral-500">{label}</dt>
+      <dd className={`min-w-0 break-all ${discret ? 'text-neutral-600' : 'text-neutral-100'}`}>
+        {valeur}
+      </dd>
+    </div>
   )
 }

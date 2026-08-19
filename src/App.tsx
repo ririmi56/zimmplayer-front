@@ -15,7 +15,8 @@ import { NowPlaying } from './routes/NowPlaying'
 import { Search } from './routes/Search'
 import { Sessions } from './routes/Sessions'
 import { Settings } from './routes/Settings'
-import { useIdentity } from './state/identity'
+import { useAuth, useDisplayName } from './state/auth'
+import { Connexion } from './routes/Connexion'
 import { useCurrentSession } from './state/session'
 
 /**
@@ -79,12 +80,18 @@ export default function App() {
   const [lyricsOpen, setLyricsOpen] = useState(false)
   const [queueOpen, setQueueOpen] = useState(false)
   const { data: session } = useCurrentSession()
-  const name = useIdentity((s) => s.name)
+  const name = useDisplayName()
+  const auth = useAuth()
 
   // Rejoindre une session, c'est se synchroniser via Snapcast : le son sort
   // du serveur, ce navigateur ne doit rien jouer lui-meme, sous peine de
   // doubler la lecture avec un decalage. Hors session, ecoute solo locale.
   const remote = session != null
+
+  // Avec OIDC, rien de l'application ne s'affiche tant que l'identite n'est
+  // pas etablie : l'ecran de connexion prend toute la place. Sans OIDC, ce
+  // cas ne se presente jamais — `authenticated` vaut toujours vrai.
+  if (auth.oidc_enabled && !auth.authenticated) return <Connexion />
 
   const barProps = {
     lyricsOpen,

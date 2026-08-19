@@ -2,6 +2,7 @@ import { useCallback, useEffect } from 'react'
 import { create } from 'zustand'
 import { api } from '../api/client'
 import { useIdentity } from '../state/identity'
+import { useDisplayName } from '../state/auth'
 import { useCurrentSession } from '../state/session'
 import { SnapcastClient, browserClientId, type SnapStatus } from './client'
 
@@ -54,7 +55,9 @@ const useSnapclientStore = create<{
  */
 export function useSnapclient() {
   const { data: session } = useCurrentSession()
-  const { name, listenHere, setListenHere } = useIdentity()
+  const { listenHere, setListenHere } = useIdentity()
+  // Le nom du snapclient est celui de l'identite, jamais un renommage a part.
+  const name = useDisplayName()
   const status = useSnapclientStore((s) => s.status)
   const needsGesture = useSnapclientStore((s) => s.needsGesture)
   const listening = useSnapclientStore((s) => s.client !== null)

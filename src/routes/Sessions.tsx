@@ -4,10 +4,12 @@ import { api } from '../api/client'
 import { formatDateTime } from '../components/format'
 import { useSnapclient } from '../snapcast/useSnapclient'
 import { useIdentity } from '../state/identity'
+import { useDisplayName } from '../state/auth'
 
 export function Sessions() {
   const queryClient = useQueryClient()
-  const { sessionId, setSessionId, name } = useIdentity()
+  const { sessionId, setSessionId } = useIdentity()
+  const name = useDisplayName()
   const [newName, setNewName] = useState('')
   const snap = useSnapclient()
 
