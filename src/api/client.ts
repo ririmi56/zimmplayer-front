@@ -50,6 +50,12 @@ export type SnapRawResult = {
 }
 export type ScanError = components['schemas']['ScanErrorOut']
 export type AuthStatus = components['schemas']['AuthStatus']
+export type AppUser = components['schemas']['UserOut']
+export type Person = components['schemas']['PersonOut']
+export type Playlist = components['schemas']['PlaylistOut']
+export type PlaylistDetail = components['schemas']['PlaylistDetail']
+export type GlobalStats = components['schemas']['GlobalStats']
+export type UserStats = components['schemas']['UserStats']
 export type Page<T> = { items: T[]; total: number; limit: number; offset: number }
 
 /**
@@ -130,6 +136,51 @@ export const api = {
     return request<Page<Album>>(`/api/albums?${search}`)
   },
   authStatus: () => request<AuthStatus>('/api/auth/me'),
+  users: () => request<AppUser[]>('/api/admin/users'),
+  people: () => request<Person[]>('/api/users'),
+
+  stats: () => request<GlobalStats>('/api/stats'),
+  userStats: () => request<UserStats[]>('/api/stats/users'),
+  reportListen: (trackId: number, seconds: number) =>
+    request<void>('/api/stats/listens', {
+      method: 'POST',
+      body: JSON.stringify({ track_id: trackId, seconds }),
+    }),
+
+  playlists: () => request<Playlist[]>('/api/playlists'),
+  playlist: (id: number) => request<PlaylistDetail>(`/api/playlists/${id}`),
+  createPlaylist: (name: string) =>
+    request<PlaylistDetail>('/api/playlists', { method: 'POST', body: JSON.stringify({ name }) }),
+  renamePlaylist: (id: number, name: string) =>
+    request<PlaylistDetail>(`/api/playlists/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ name }),
+    }),
+  deletePlaylist: (id: number) => request<void>(`/api/playlists/${id}`, { method: 'DELETE' }),
+  addToPlaylist: (id: number, body: { track_ids?: number[]; album_id?: number }) =>
+    request<PlaylistDetail>(`/api/playlists/${id}/tracks`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  movePlaylistTrack: (id: number, itemId: number, toIndex: number) =>
+    request<PlaylistDetail>(`/api/playlists/${id}/tracks/${itemId}/move`, {
+      method: 'POST',
+      body: JSON.stringify({ to_index: toIndex }),
+    }),
+  removeFromPlaylist: (id: number, itemId: number) =>
+    request<PlaylistDetail>(`/api/playlists/${id}/tracks/${itemId}`, { method: 'DELETE' }),
+  sharePlaylist: (id: number, userId: number, canEdit: boolean) =>
+    request<PlaylistDetail>(`/api/playlists/${id}/shares/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ can_edit: canEdit }),
+    }),
+  unsharePlaylist: (id: number, userId: number) =>
+    request<PlaylistDetail>(`/api/playlists/${id}/shares/${userId}`, { method: 'DELETE' }),
+  setUserAdmin: (id: number, isAdmin: boolean) =>
+    request<AppUser>(`/api/admin/users/${id}/admin`, {
+      method: 'PUT',
+      body: JSON.stringify({ is_admin: isAdmin }),
+    }),
   logout: () => request<{ provider_logout_url: string | null }>('/api/auth/logout', {
     method: 'POST',
   }),

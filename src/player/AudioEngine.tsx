@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { streamUrl } from '../api/client'
+import { useListenReport } from './listenReport'
 import { currentTrack, usePlayer } from './store'
 
 /**
@@ -20,6 +21,11 @@ export function AudioEngine() {
   const next = usePlayer((s) => s.next)
   const setProgress = usePlayer((s) => s.setProgress)
   const clearSeek = usePlayer((s) => s.clearSeek)
+  const currentTime = usePlayer((s) => s.currentTime)
+
+  // L'API ne voit pas cette lecture : elle ne sert qu'une redirection vers le
+  // stockage. Sans cette annonce, l'ecoute solo n'apparaitrait nulle part.
+  useListenReport(track, currentTime)
 
   // Changement de piste : on ne recharge la source que si elle change vraiment,
   // sinon chaque rendu redemarrerait le morceau depuis le debut.

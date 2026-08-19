@@ -5,6 +5,7 @@ import { api, type Track } from '../api/client'
 import { TrackEditor } from '../components/TrackEditor'
 import { Cover } from '../components/Cover'
 import { formatDuration } from '../components/format'
+import { AddToPlaylist } from '../components/AddToPlaylist'
 import { TrackList } from '../components/TrackList'
 import { usePlayer } from '../player/store'
 import { useIdentity } from '../state/identity'
@@ -83,6 +84,12 @@ export function Album() {
                 Ajouter à la file
               </button>
             )}
+            {/* Tout l'album d'un coup : l'API accepte un album_id, ce qui
+                evite d'envoyer la liste des pistes et de la desynchroniser. */}
+            <AddToPlaylist
+              albumId={albumId}
+              className="rounded-full border border-neutral-700 p-2.5 text-neutral-300 hover:border-neutral-500 hover:text-emerald-400"
+            />
             {!inSession && (
               <button
                 onClick={() => {
