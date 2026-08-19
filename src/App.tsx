@@ -3,8 +3,10 @@ import { NavLink, Route, Routes, useNavigate } from 'react-router-dom'
 import { QueuePanel } from './components/QueuePanel'
 import { AudioEngine } from './player/AudioEngine'
 import { LyricsPanel } from './player/LyricsPanel'
+import { useMediaSession } from './player/mediaSession'
 import { PlayerBar } from './player/PlayerBar'
 import { RemoteBar } from './player/RemoteBar'
+import { SessionPresence } from './player/SessionPresence'
 import { Admin } from './routes/Admin'
 import { Album } from './routes/Album'
 import { Artist } from './routes/Artist'
@@ -94,6 +96,10 @@ export default function App() {
   // Rejoindre une session, c'est se synchroniser via Snapcast : le son sort
   // du serveur, ce navigateur ne doit rien jouer lui-meme, sous peine de
   // doubler la lecture avec un decalage. Hors session, ecoute solo locale.
+  // Monte une seule fois, hors des routes : les commandes media du navigateur
+  // et du systeme doivent survivre a la navigation, comme la lecture.
+  useMediaSession()
+
   const remote = session != null
 
   // Avec OIDC, rien de l'application ne s'affiche tant que l'identite n'est
@@ -175,6 +181,9 @@ export default function App() {
       {/* Monte une seule fois, hors des routes : la lecture survit à la
           navigation. Retire en session, ou le son sortirait deux fois. */}
       {!remote && <AudioEngine />}
+      {/* En session, ce navigateur ne joue aucun <audio> : sans cet element
+          silencieux, Chrome ne voit aucun media et n'affiche aucun controle. */}
+      {remote && <SessionPresence />}
     </div>
   )
 }

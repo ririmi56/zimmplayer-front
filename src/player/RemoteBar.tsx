@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Cover } from '../components/Cover'
 import { formatDuration } from '../components/format'
 import { useCurrentSession, useSessionControl } from '../state/session'
+import { useMediaPosition } from './mediaSession'
 import { ICONS, Icon } from './icons'
 import { SnapVolume } from './SnapVolume'
 
@@ -44,6 +45,10 @@ export function RemoteBar({
   const total = track?.duration_s ?? 0
   const position = Math.min(serverPosition + drift, total || Infinity)
   const progress = total > 0 ? (position / total) * 100 : 0
+
+  // Meme source que la barre : les commandes systeme ne doivent pas afficher
+  // une progression differente de celle qu'on a sous les yeux.
+  useMediaPosition(position, total, isPlaying)
 
   return (
     <footer className="flex h-20 shrink-0 items-center gap-4 border-t border-sky-900/60 bg-neutral-950 px-4">

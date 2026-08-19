@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { streamUrl } from '../api/client'
+import { useMediaPosition } from './mediaSession'
 import { useListenReport } from './listenReport'
 import { currentTrack, usePlayer } from './store'
 
@@ -22,6 +23,9 @@ export function AudioEngine() {
   const setProgress = usePlayer((s) => s.setProgress)
   const clearSeek = usePlayer((s) => s.clearSeek)
   const currentTime = usePlayer((s) => s.currentTime)
+  const duration = usePlayer((s) => s.duration)
+
+  useMediaPosition(currentTime, duration, isPlaying)
 
   // L'API ne voit pas cette lecture : elle ne sert qu'une redirection vers le
   // stockage. Sans cette annonce, l'ecoute solo n'apparaitrait nulle part.

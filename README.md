@@ -137,6 +137,28 @@ L'ouverture du son exige un **geste utilisateur** (politique d'autoplay des
 navigateurs) : rejoindre une session déclenche déjà cette écoute dans le même
 clic ; si le navigateur la bloque quand même, un second clic reste proposé.
 
+## Commandes média du navigateur
+
+L'application se déclare auprès de l'API **Media Session** : le titre, l'artiste,
+l'album et la pochette apparaissent dans le centre multimédia du navigateur et
+sur l'écran de verrouillage, et les touches média du clavier pilotent la
+lecture.
+
+Les commandes repartent vers la bonne sortie. **En session, « pause » met en
+pause pour tout le monde** — c'est le sens d'une écoute partagée, mais il vaut
+mieux le savoir avant d'appuyer sur la touche de son clavier.
+
+**Le volume n'y figure pas**, et ce n'est pas un oubli : l'API Media Session
+n'expose que lecture, pause, piste précédente et suivante, position et arrêt.
+Le volume reste au système — les touches du clavier agissent sur la sortie
+générale, et le curseur de l'application sur cette lecture-ci.
+
+Une limite connue : hors session, le son sort d'un élément `<audio>` et le
+navigateur le détecte de lui-même. En session avec « Écouter ici », il sort de
+Web Audio, que les navigateurs ne rattachent pas forcément à une session média.
+Les métadonnées et les commandes sont posées dans les deux cas ; leur
+affichage, lui, dépend du navigateur.
+
 ## Licence
 
 MIT, voir [`LICENSE`](./LICENSE).
