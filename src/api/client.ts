@@ -52,6 +52,16 @@ export type ScanError = components['schemas']['ScanErrorOut']
 export type AuthStatus = components['schemas']['AuthStatus']
 export type Page<T> = { items: T[]; total: number; limit: number; offset: number }
 
+/**
+ * Tris acceptes par GET /api/albums.
+ *
+ * Ecrit a la main, comme les types Snapcast plus haut : `sort` est un
+ * parametre de requete, absent de `components['schemas']` que genere
+ * openapi-typescript. Doit rester aligne sur `AlbumSort` cote API
+ * (app/api/catalog.py) — une valeur inconnue s'y solde par un 422.
+ */
+export type AlbumSort = 'artiste' | 'titre' | 'annee' | 'ajout' | 'genre'
+
 /** Pseudo courant, lu au moment de l'appel pour suivre les changements. */
 let userName = 'anonyme'
 export const setUserName = (name: string) => {
@@ -104,6 +114,7 @@ export const api = {
       q?: string
       artistId?: number
       genre?: string
+      sort?: AlbumSort
       /** Defaut du serveur : 100, plafonne a 500. */
       limit?: number
       offset?: number
@@ -113,6 +124,7 @@ export const api = {
     if (params.q) search.set('q', params.q)
     if (params.artistId) search.set('artist_id', String(params.artistId))
     if (params.genre) search.set('genre', params.genre)
+    if (params.sort) search.set('sort', params.sort)
     if (params.limit != null) search.set('limit', String(params.limit))
     if (params.offset) search.set('offset', String(params.offset))
     return request<Page<Album>>(`/api/albums?${search}`)
