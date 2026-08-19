@@ -1,7 +1,10 @@
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { coverUrl, type Track } from '../api/client'
 import { Cover } from '../components/Cover'
 import { formatDuration } from '../components/format'
+import { dropTarget } from '../components/queueOrder'
+import { ICONS, Icon } from '../player/icons'
 import { useNowPlaying } from '../player/nowPlaying'
 import { usePlayer } from '../player/store'
 import { useCurrentSession, useSessionControl } from '../state/session'
@@ -14,6 +17,8 @@ type Entry = {
   played: boolean
   current: boolean
   play: () => void
+  /** Depose cette entree au rang `to` de la file. */
+  move: (to: number) => void
 }
 
 /**
@@ -112,57 +117,166 @@ export function NowPlaying() {
           </div>
         </div>
 
-        {entries.length > 0 && (
-          <section className="mt-12">
-            <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-neutral-400">
-              File d'attente
-              <span className="ml-2 font-normal normal-case tracking-normal text-neutral-500">
-                {upcoming > 0 ? `${upcoming} titre${upcoming > 1 ? 's' : ''} à suivre` : 'fin de file'}
-              </span>
-            </h2>
-            <ol className="max-w-3xl">
-              {entries.map((entry) => (
-                <li
-                  key={entry.key}
-                  onDoubleClick={entry.play}
-                  className={`flex items-center gap-3 rounded px-2 py-1.5 ${
-                    entry.current ? 'bg-neutral-800/60' : 'hover:bg-neutral-800/30'
-                  } ${entry.played && !entry.current ? 'opacity-50' : ''}`}
-                >
-                  <button onClick={entry.play} title="Lire ce titre" className="shrink-0">
-                    <Cover
-                      albumId={entry.track.album_id}
-                      hasCover={entry.track.has_cover}
-                      className="h-9 w-9 rounded"
-                    />
-                  </button>
-                  <div className="min-w-0 flex-1">
-                    <div
-                      className={`truncate text-sm ${
-                        entry.current
-                          ? 'text-emerald-400'
-                          : entry.played
-                            ? 'text-neutral-500'
-                            : 'text-neutral-100'
-                      }`}
-                    >
-                      {entry.track.title}
-                    </div>
-                    <div className="truncate text-xs text-neutral-500">
-                      {entry.track.artist_name}
-                      {entry.addedBy && ` · ajouté par ${entry.addedBy}`}
-                    </div>
-                  </div>
-                  <span className="shrink-0 text-xs tabular-nums text-neutral-600">
-                    {formatDuration(entry.track.duration_s)}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </section>
-        )}
+        {entries.length > 0 && <Queue entries={entries} upcoming={upcoming} />}
       </div>
     </div>
+  )
+}
+
+
+/** Hauteur de la boite, en pixels : environ huit lignes de 48 px. */
+const QUEUE_HEIGHT = 'h-96'
+
+/**
+ * La file, dans une boite a hauteur fixe qui defile toute seule.
+ *
+ * Une file de soixante titres etirait la page sur plusieurs ecrans, et le
+ * titre en cours s'y perdait. Ici la boite ne bouge pas et c'est son contenu
+ * qui se recale : le titre joue reste au centre, quelques titres passes
+ * au-dessus, la suite en dessous.
+ */
+function Queue({ entries, upcoming }: { entries: Entry[]; upcoming: number }) {
+  const list = useRef<HTMLOListElement>(null)
+  const current = useRef<HTMLLIElement>(null)
+  // Le premier placement est instantane : arriver sur la page en voyant la
+  // liste glisser depuis le haut donnerait l'impression d'un chargement.
+  const placed = useRef(false)
+
+  const currentKey = entries.find((entry) => entry.current)?.key
+
+  const [dragKey, setDragKey] = useState<Entry['key'] | null>(null)
+  /** Rang d'insertion visé, entre 0 et le nombre de titres. */
+  const [dropIndex, setDropIndex] = useState<number | null>(null)
+
+  const cancelDrop = () => {
+    setDragKey(null)
+    setDropIndex(null)
+  }
+
+  const commitDrop = () => {
+    const from = entries.findIndex((entry) => entry.key === dragKey)
+    if (from >= 0 && dropIndex !== null) {
+      const to = dropTarget(from, dropIndex)
+      if (to !== null) entries[from].move(to)
+    }
+    cancelDrop()
+  }
+
+  useEffect(() => {
+    const box = list.current
+    const item = current.current
+    if (!box || !item) return
+    // `offsetTop` est mesure depuis la boite (d'ou `relative` sur le <ol>) et
+    // ne depend pas du defilement en cours : recentrer deux fois de suite ne
+    // derive donc pas.
+    const top = item.offsetTop - (box.clientHeight - item.clientHeight) / 2
+    const smooth =
+      placed.current && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    box.scrollTo({ top, behavior: smooth ? 'smooth' : 'auto' })
+    placed.current = true
+  }, [currentKey])
+
+  return (
+    <section className="mt-12 max-w-3xl">
+      <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-neutral-400">
+        File d'attente
+        <span className="ml-2 font-normal normal-case tracking-normal text-neutral-500">
+          {upcoming > 0 ? `${upcoming} titre${upcoming > 1 ? 's' : ''} à suivre` : 'fin de file'}
+        </span>
+      </h2>
+      <ol
+        ref={list}
+        className={`${QUEUE_HEIGHT} relative overflow-y-auto rounded-lg border border-neutral-800/80 bg-neutral-900/40 p-1 pr-2`}
+      >
+        {entries.map((entry, index) => (
+          <li
+            key={entry.key}
+            ref={entry.current ? current : undefined}
+            draggable
+            onDragStart={(event) => {
+              setDragKey(entry.key)
+              event.dataTransfer.effectAllowed = 'move'
+            }}
+            onDragOver={(event) => {
+              if (dragKey === null) return
+              event.preventDefault()
+              event.dataTransfer.dropEffect = 'move'
+              // Moitié haute : on insère avant ; moitié basse : après.
+              const box = event.currentTarget.getBoundingClientRect()
+              const after = event.clientY - box.top > box.height / 2
+              setDropIndex(after ? index + 1 : index)
+            }}
+            onDrop={(event) => {
+              event.preventDefault()
+              commitDrop()
+            }}
+            onDragEnd={cancelDrop}
+            onDoubleClick={entry.play}
+            className={[
+              'group flex items-center gap-3 rounded border-y-2 px-2 py-1.5',
+              // Repère d'insertion. Les bordures existent toujours, en
+              // transparent : le trait apparaît sans décaler la liste.
+              dropIndex === index ? 'border-t-sky-400' : 'border-t-transparent',
+              dropIndex === entries.length && index === entries.length - 1
+                ? 'border-b-sky-400'
+                : 'border-b-transparent',
+              entry.key === dragKey ? 'opacity-40' : '',
+              entry.current ? 'bg-neutral-800/60' : 'hover:bg-neutral-800/30',
+              entry.played && !entry.current ? 'opacity-50' : '',
+            ].join(' ')}
+          >
+            <button onClick={entry.play} title="Lire ce titre" className="shrink-0">
+              <Cover
+                albumId={entry.track.album_id}
+                hasCover={entry.track.has_cover}
+                className="h-9 w-9 rounded"
+              />
+            </button>
+            <div className="min-w-0 flex-1">
+              <div
+                className={`truncate text-sm ${
+                  entry.current
+                    ? 'text-emerald-400'
+                    : entry.played
+                      ? 'text-neutral-500'
+                      : 'text-neutral-100'
+                }`}
+              >
+                {entry.track.title}
+              </div>
+              <div className="truncate text-xs text-neutral-500">
+                {entry.track.artist_name}
+                {entry.addedBy && ` · ajouté par ${entry.addedBy}`}
+              </div>
+            </div>
+            <span className="shrink-0 text-xs tabular-nums text-neutral-600">
+              {formatDuration(entry.track.duration_s)}
+            </span>
+            {/*
+              Le glisser-déposer natif est inaccessible au clavier : cette
+              poignée le double par les flèches haut et bas.
+            */}
+            <button
+              title="Déplacer (glisser, ou flèches haut et bas)"
+              aria-label={`Déplacer ${entry.track.title}`}
+              onKeyDown={(event) => {
+                if (event.key === 'ArrowUp' && index > 0) {
+                  event.preventDefault()
+                  entry.move(index - 1)
+                }
+                if (event.key === 'ArrowDown' && index < entries.length - 1) {
+                  event.preventDefault()
+                  entry.move(index + 1)
+                }
+              }}
+              className="shrink-0 cursor-grab text-neutral-700 opacity-0 hover:text-neutral-200 focus:opacity-100 group-hover:opacity-100"
+            >
+              <Icon path={ICONS.dragHandle} className="h-4 w-4" />
+            </button>
+          </li>
+        ))}
+      </ol>
+    </section>
   )
 }
 
@@ -182,6 +296,7 @@ function useQueueEntries(): Entry[] {
   const shuffle = usePlayer((s) => s.shuffle)
   const order = usePlayer((s) => s.order)
   const playQueue = usePlayer((s) => s.playQueue)
+  const move = usePlayer((s) => s.move)
 
   if (session) {
     const currentIndex = session.items.findIndex((i) => i.id === session.current_item_id)
@@ -192,6 +307,7 @@ function useQueueEntries(): Entry[] {
       played: currentIndex >= 0 && position < currentIndex,
       current: item.id === session.current_item_id,
       play: () => control.playItem(item.id),
+      move: (to) => control.move(item.id, to),
     }))
   }
 
@@ -205,5 +321,6 @@ function useQueueEntries(): Entry[] {
     played: (rank.get(position) ?? 0) < currentRank,
     current: position === index,
     play: () => playQueue(queue, position),
+    move: (to) => move(position, to),
   }))
 }
