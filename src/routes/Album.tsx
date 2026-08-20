@@ -6,6 +6,7 @@ import { TrackEditor } from '../components/TrackEditor'
 import { Cover } from '../components/Cover'
 import { formatDuration } from '../components/format'
 import { AddToPlaylist } from '../components/AddToPlaylist'
+import { FavoriteButton } from '../components/FavoriteButton'
 import { TrackList } from '../components/TrackList'
 import { usePlayer } from '../player/store'
 import { useIdentity } from '../state/identity'
@@ -44,7 +45,10 @@ export function Album() {
           alt={data.title}
         />
         <div className="min-w-0">
-          <h1 className="mb-1 text-3xl font-semibold text-neutral-100">{data.title}</h1>
+          <div className="mb-1 flex items-center gap-3">
+            <h1 className="text-3xl font-semibold text-neutral-100">{data.title}</h1>
+            <FavoriteButton albumId={data.id} albumTitle={data.title} size="h-6 w-6" />
+          </div>
           <p className="mb-4 text-sm text-neutral-400">
             <Link to={`/artists/${data.artist_id}`} className="hover:text-neutral-100 hover:underline">
               {data.artist_name}

@@ -18,6 +18,9 @@ export const ICONS = {
   // Contour quand le titre n'est pas aime, rempli quand il l'est : c'est le
   // meme trace, `Icon` s'occupe du remplissage.
   heart: 'M12 20.5 4.2 12.9a4.6 4.6 0 0 1 6.5-6.5l1.3 1.3 1.3-1.3a4.6 4.6 0 1 1 6.5 6.5z',
+  // L'etoile des albums, a ne pas confondre avec le coeur des titres : deux
+  // notions distinctes, deux formes franchement differentes.
+  star: 'M12 3.5l2.6 5.6 6.1.8-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6-4.5-4.2 6.1-.8z',
   headphones: 'M4 14v-2a8 8 0 0116 0v2M4 14h3v6H4zM17 14h3v6h-3z',
   // Deux fleches opposees : le bouton retourne le sens du tri en cours.
   kebab: 'M12 5.5h.01M12 12h.01M12 18.5h.01',
