@@ -1291,6 +1291,8 @@ export interface components {
             listening: components["schemas"]["ListeningStats"];
             /** Top Tracks */
             top_tracks: components["schemas"]["TopTrack"][];
+            /** Top Artists */
+            top_artists: components["schemas"]["TopArtist"][];
             /** Sessions */
             sessions: components["schemas"]["SessionStats"][];
         };
@@ -1646,6 +1648,19 @@ export interface components {
         StreamUpdate: {
             /** Stream Id */
             stream_id: string;
+        };
+        /** TopArtist */
+        TopArtist: {
+            /** Artist Id */
+            artist_id: number;
+            /** Name */
+            name: string;
+            /** Listens */
+            listens: number;
+            /** Seconds */
+            seconds: number;
+            /** Distinct Tracks */
+            distinct_tracks: number;
         };
         /** TopTrack */
         TopTrack: {

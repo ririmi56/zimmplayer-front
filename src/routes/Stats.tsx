@@ -56,7 +56,13 @@ export function Stats() {
   if (stats.isLoading) return <p className="text-sm text-neutral-500">Chargement…</p>
   if (stats.error) return <p className="text-sm text-red-400">{(stats.error as Error).message}</p>
 
-  const { catalogue, listening, top_tracks: top, sessions } = stats.data!
+  const {
+    catalogue,
+    listening,
+    top_tracks: top,
+    top_artists: artistes,
+    sessions,
+  } = stats.data!
   const admin = !auth.oidc_enabled || auth.role === 'admin'
 
   return (
@@ -135,6 +141,49 @@ export function Stats() {
           </div>
         )}
       </section>
+
+      {artistes.length > 0 && (
+        <section>
+          <h2 className="mb-1 text-sm font-medium uppercase tracking-wide text-neutral-400">
+            Par artiste
+          </h2>
+          <p className="mb-3 max-w-2xl text-xs text-neutral-500">
+            Classés sur le <strong>temps cumulé</strong>, et non sur le nombre d’écoutes : à
+            nombre égal, un artiste de morceaux courts passerait devant. L’artiste est celui du
+            titre, donc une compilation compte pour chacun de ses interprètes.
+          </p>
+          <ol className="max-w-3xl divide-y divide-neutral-800/60 rounded-lg border border-neutral-800">
+            {artistes.map((artiste, rang) => (
+              <li key={artiste.artist_id} className="flex items-center gap-3 px-4 py-3 text-sm">
+                <span className="w-5 shrink-0 text-right tabular-nums text-neutral-600">
+                  {rang + 1}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <Link
+                    to={`/artists/${artiste.artist_id}`}
+                    className="block truncate text-neutral-100 hover:underline"
+                  >
+                    {artiste.name}
+                  </Link>
+                  <div className="text-xs text-neutral-500">
+                    {artiste.distinct_tracks} titre{artiste.distinct_tracks > 1 ? 's' : ''}{' '}
+                    différent{artiste.distinct_tracks > 1 ? 's' : ''}
+                  </div>
+                </div>
+                <span className="w-16 shrink-0 text-right tabular-nums text-neutral-400">
+                  {artiste.listens}
+                </span>
+                <span className="w-16 shrink-0 text-right tabular-nums text-neutral-200">
+                  {duree(artiste.seconds)}
+                </span>
+              </li>
+            ))}
+          </ol>
+          <p className="mt-2 text-xs text-neutral-600">
+            Colonnes : nombre d’écoutes, temps cumulé.
+          </p>
+        </section>
+      )}
 
       {sessions.length > 0 && (
         <section>
