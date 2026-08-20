@@ -19,6 +19,10 @@ export const ALBUM_SORTS: { value: AlbumSort; label: string }[] = [
   // Tous comptes confondus : ce qui plait dans la maison, pas ce que j'aime
   // moi — pour ca il y a l'onglet « Mes likes ».
   { value: 'likes', label: 'Les plus aimés' },
+  // Deux classements voisins, deux mesures differentes : « Les plus aimés »
+  // additionne les likes des TITRES d'un album, celui-ci compte les personnes
+  // qui ont mis L'ALBUM en favori. Les libelles doivent le dire.
+  { value: 'favoris', label: 'Les plus mis en favori' },
 ]
 
 const VALUES = new Set(ALBUM_SORTS.map((sort) => sort.value))
@@ -34,16 +38,31 @@ export function parseReverse(raw: string | null): boolean {
   return raw === 'inverse'
 }
 
+
+/** Retient le filtre « mes favoris » venu de l'URL. Absent = tout le catalogue. */
+export function parseFavoris(raw: string | null): boolean {
+  return raw === '1'
+}
+
 /**
- * Ce qu'il faut mettre dans l'URL pour ce tri et ce sens.
+ * Ce qu'il faut mettre dans l'URL pour ce tri, ce sens et ce filtre.
  *
  * L'etat par defaut ne s'ecrit pas : `/` doit rester `/`, sans `?tri=artiste`
  * accroche derriere. D'ou une fonction plutot qu'un objet monte a la main a
- * chaque appelant, qui finirait par oublier un des deux cas.
+ * chaque appelant, qui finirait par oublier un des cas.
+ *
+ * Les trois sont exiges, sans valeur par defaut : `setSearchParams` REMPLACE
+ * la chaine entiere, donc un appelant qui omettrait le filtre en changeant de
+ * tri l'effacerait sans le vouloir.
  */
-export function albumSearchParams(sort: AlbumSort, reverse: boolean): Record<string, string> {
+export function albumSearchParams(
+  sort: AlbumSort,
+  reverse: boolean,
+  favoris: boolean,
+): Record<string, string> {
   const params: Record<string, string> = {}
   if (sort !== 'artiste') params.tri = sort
   if (reverse) params.sens = 'inverse'
+  if (favoris) params.favoris = '1'
   return params
 }

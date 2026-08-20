@@ -468,6 +468,53 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/favorites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Favorites
+         * @description Les identifiants des albums que j'ai mis en favori.
+         *
+         *     Des identifiants nus, comme pour les likes : l'interface n'a besoin que de
+         *     savoir quelle etoile remplir.
+         */
+        get: operations["my_favorites_api_favorites_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/favorites/{album_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Favorite
+         * @description Mettre en favori. Deux fois de suite ne change rien, et ne fait pas d'erreur.
+         */
+        put: operations["favorite_api_favorites__album_id__put"];
+        post?: never;
+        /**
+         * Unfavorite
+         * @description Retirer des favoris. Silencieux s'il n'y etait pas : le resultat est le meme.
+         */
+        delete: operations["unfavorite_api_favorites__album_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/stats": {
         parameters: {
             query?: never;
@@ -1024,6 +1071,35 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/users/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete User
+         * @description Retire une personne de la base, pour faire le menage.
+         *
+         *     Suppression au sens de l'annuaire, pas de l'histoire : les ecoutes sont
+         *     detachees et non effacees (`listens.user_id` passe a NULL), si bien que les
+         *     totaux et le classement des titres restent justes. Partent en revanche avec
+         *     le compte, par cascade : ses playlists, ses likes, ses favoris et les
+         *     partages dont il beneficiait.
+         *
+         *     Sans OIDC, ou si la personne se reconnecte, la ligne reapparait a la
+         *     prochaine visite : ce menage vaut pour qui n'est jamais revenu.
+         */
+        delete: operations["delete_user_api_admin_users__user_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -1215,6 +1291,8 @@ export interface components {
             listening: components["schemas"]["ListeningStats"];
             /** Top Tracks */
             top_tracks: components["schemas"]["TopTrack"][];
+            /** Top Artists */
+            top_artists: components["schemas"]["TopArtist"][];
             /** Sessions */
             sessions: components["schemas"]["SessionStats"][];
         };
@@ -1571,6 +1649,19 @@ export interface components {
             /** Stream Id */
             stream_id: string;
         };
+        /** TopArtist */
+        TopArtist: {
+            /** Artist Id */
+            artist_id: number;
+            /** Name */
+            name: string;
+            /** Listens */
+            listens: number;
+            /** Seconds */
+            seconds: number;
+            /** Distinct Tracks */
+            distinct_tracks: number;
+        };
         /** TopTrack */
         TopTrack: {
             /** Track Id */
@@ -1657,6 +1748,16 @@ export interface components {
              * Format: date-time
              */
             last_seen_at: string;
+            /**
+             * Playlist Count
+             * @default 0
+             */
+            playlist_count: number;
+            /**
+             * Listen Count
+             * @default 0
+             */
+            listen_count: number;
         };
         /** UserStats */
         UserStats: {
@@ -1917,7 +2018,9 @@ export interface operations {
                 q?: string | null;
                 artist_id?: number | null;
                 genre?: string | null;
-                sort?: "artiste" | "titre" | "annee" | "ajout" | "genre" | "likes";
+                sort?: "artiste" | "titre" | "annee" | "ajout" | "genre" | "likes" | "favoris";
+                reverse?: boolean;
+                favoris?: boolean;
                 limit?: number;
                 offset?: number;
             };
@@ -2636,6 +2739,99 @@ export interface operations {
             };
             path: {
                 track_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_favorites_api_favorites_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": number[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    favorite_api_favorites__album_id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path: {
+                album_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unfavorite_api_favorites__album_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path: {
+                album_id: number;
             };
             cookie?: never;
         };
@@ -3790,6 +3986,37 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["UserOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_user_api_admin_users__user_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path: {
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

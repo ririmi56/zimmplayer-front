@@ -3,8 +3,14 @@ import { useSearchParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { AlbumGrid } from '../components/AlbumGrid'
 import { AlbumSortSelect } from '../components/AlbumSortSelect'
-import { albumSearchParams, parseAlbumSort, parseReverse } from '../components/albumSort'
+import {
+  albumSearchParams,
+  parseAlbumSort,
+  parseFavoris,
+  parseReverse,
+} from '../components/albumSort'
 import { useInfiniteScroll } from '../components/useInfiniteScroll'
+import { ICONS, Icon } from '../player/icons'
 
 /**
  * Albums demandes par requete. Le serveur plafonne a 500, mais une page courte
@@ -20,13 +26,14 @@ export function Library() {
   const [params, setParams] = useSearchParams()
   const sort = parseAlbumSort(params.get('tri'))
   const reverse = parseReverse(params.get('sens'))
+  const favoris = parseFavoris(params.get('favoris'))
 
   const query = useInfiniteQuery({
     // `sort` dans la cle : sans lui, changer de tri reafficherait les pages
-    // deja en cache, triees a l'ancienne.
-    queryKey: ['albums', sort, reverse],
+    // deja en cache, triees a l'ancienne. Meme raison pour le filtre.
+    queryKey: ['albums', sort, reverse, favoris],
     queryFn: ({ pageParam }) =>
-      api.albums({ sort, reverse, limit: PAGE_SIZE, offset: pageParam }),
+      api.albums({ sort, reverse, favoris, limit: PAGE_SIZE, offset: pageParam }),
     initialPageParam: 0,
     // `total` etant renvoye par chaque page, on sait s'arreter sans avoir a
     // deviner d'apres une page incomplete.
@@ -51,14 +58,31 @@ export function Library() {
           <span className="text-sm text-neutral-500">
             {albums.length < total ? `${albums.length} sur ${total} albums` : `${total} albums`}
           </span>
+          <button
+            onClick={() =>
+              setParams(albumSearchParams(sort, reverse, !favoris), { replace: true })
+            }
+            aria-pressed={favoris}
+            title={favoris ? 'Afficher tout le catalogue' : 'N’afficher que mes favoris'}
+            className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm ${
+              favoris
+                ? 'border-amber-400/60 text-amber-300'
+                : 'border-neutral-700 text-neutral-400 hover:text-neutral-100'
+            }`}
+          >
+            <Icon path={ICONS.star} filled={favoris} className="h-4 w-4" />
+            Favoris
+          </button>
           {/* `replace` : changer de tri n'est pas une navigation, l'empiler
               obligerait a autant de retours arriere qu'on a essaye de tris. */}
           <AlbumSortSelect
             value={sort}
             reverse={reverse}
-            onChange={(next) => setParams(albumSearchParams(next, reverse), { replace: true })}
+            onChange={(next) =>
+              setParams(albumSearchParams(next, reverse, favoris), { replace: true })
+            }
             onToggleReverse={() =>
-              setParams(albumSearchParams(sort, !reverse), { replace: true })
+              setParams(albumSearchParams(sort, !reverse, favoris), { replace: true })
             }
           />
         </div>

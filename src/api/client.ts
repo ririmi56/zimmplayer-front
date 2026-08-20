@@ -66,7 +66,14 @@ export type Page<T> = { items: T[]; total: number; limit: number; offset: number
  * openapi-typescript. Doit rester aligne sur `AlbumSort` cote API
  * (app/api/catalog.py) — une valeur inconnue s'y solde par un 422.
  */
-export type AlbumSort = 'artiste' | 'titre' | 'annee' | 'ajout' | 'genre' | 'likes'
+export type AlbumSort =
+  | 'artiste'
+  | 'titre'
+  | 'annee'
+  | 'ajout'
+  | 'genre'
+  | 'likes'
+  | 'favoris'
 
 /** Pseudo courant, lu au moment de l'appel pour suivre les changements. */
 let userName = 'anonyme'
@@ -123,6 +130,8 @@ export const api = {
       sort?: AlbumSort
       /** Retourne le sens naturel du tri, sans en changer la cle. */
       reverse?: boolean
+      /** Ne garder que MES favoris — le tri, lui, compte tout le monde. */
+      favoris?: boolean
       /** Defaut du serveur : 100, plafonne a 500. */
       limit?: number
       offset?: number
@@ -134,12 +143,15 @@ export const api = {
     if (params.genre) search.set('genre', params.genre)
     if (params.sort) search.set('sort', params.sort)
     if (params.reverse) search.set('reverse', 'true')
+    if (params.favoris) search.set('favoris', 'true')
     if (params.limit != null) search.set('limit', String(params.limit))
     if (params.offset) search.set('offset', String(params.offset))
     return request<Page<Album>>(`/api/albums?${search}`)
   },
   authStatus: () => request<AuthStatus>('/api/auth/me'),
   users: () => request<AppUser[]>('/api/admin/users'),
+  deleteUser: (id: number) =>
+    request<void>(`/api/admin/users/${id}`, { method: 'DELETE' }),
   people: () => request<Person[]>('/api/users'),
 
   stats: () => request<GlobalStats>('/api/stats'),
@@ -154,6 +166,11 @@ export const api = {
   likedTracks: () => request<Track[]>('/api/likes/tracks'),
   like: (trackId: number) => request<void>(`/api/likes/${trackId}`, { method: 'PUT' }),
   unlike: (trackId: number) => request<void>(`/api/likes/${trackId}`, { method: 'DELETE' }),
+  favorites: () => request<number[]>('/api/favorites'),
+  favorite: (albumId: number) =>
+    request<void>(`/api/favorites/${albumId}`, { method: 'PUT' }),
+  unfavorite: (albumId: number) =>
+    request<void>(`/api/favorites/${albumId}`, { method: 'DELETE' }),
   playlists: () => request<Playlist[]>('/api/playlists'),
   playlist: (id: number) => request<PlaylistDetail>(`/api/playlists/${id}`),
   createPlaylist: (name: string) =>

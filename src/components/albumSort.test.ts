@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { ALBUM_SORTS, albumSearchParams, parseAlbumSort, parseReverse } from './albumSort'
+import {
+  ALBUM_SORTS,
+  albumSearchParams,
+  parseAlbumSort,
+  parseFavoris,
+  parseReverse,
+} from './albumSort'
 
 describe('parseAlbumSort', () => {
   it('retient les tris proposes', () => {
@@ -28,24 +34,44 @@ describe('parseReverse', () => {
   })
 })
 
+describe('parseFavoris', () => {
+  it('ne filtre que sur la valeur attendue', () => {
+    expect(parseFavoris('1')).toBe(true)
+    expect(parseFavoris(null)).toBe(false)
+    expect(parseFavoris('')).toBe(false)
+    expect(parseFavoris('true')).toBe(false)
+    expect(parseFavoris('0')).toBe(false)
+  })
+})
+
 describe('albumSearchParams', () => {
   it('n’écrit rien pour l’état par défaut', () => {
     // Sinon « / » deviendrait « /?tri=artiste » au premier affichage.
-    expect(albumSearchParams('artiste', false)).toEqual({})
+    expect(albumSearchParams('artiste', false, false)).toEqual({})
   })
 
   it('n’écrit que ce qui s’écarte du défaut', () => {
-    expect(albumSearchParams('titre', false)).toEqual({ tri: 'titre' })
-    expect(albumSearchParams('artiste', true)).toEqual({ sens: 'inverse' })
-    expect(albumSearchParams('annee', true)).toEqual({ tri: 'annee', sens: 'inverse' })
+    expect(albumSearchParams('titre', false, false)).toEqual({ tri: 'titre' })
+    expect(albumSearchParams('artiste', true, false)).toEqual({ sens: 'inverse' })
+    expect(albumSearchParams('annee', true, false)).toEqual({ tri: 'annee', sens: 'inverse' })
+    expect(albumSearchParams('artiste', false, true)).toEqual({ favoris: '1' })
+  })
+
+  it('garde le filtre quand on change de tri', () => {
+    // `setSearchParams` remplace toute la chaine : c'est ici qu'un filtre
+    // oublie disparaitrait de l'URL au premier changement de tri.
+    expect(albumSearchParams('titre', false, true)).toEqual({ tri: 'titre', favoris: '1' })
   })
 
   it('fait l’aller-retour avec les analyseurs', () => {
     for (const sort of ALBUM_SORTS) {
       for (const reverse of [false, true]) {
-        const params = albumSearchParams(sort.value, reverse)
-        expect(parseAlbumSort(params.tri ?? null)).toBe(sort.value)
-        expect(parseReverse(params.sens ?? null)).toBe(reverse)
+        for (const favoris of [false, true]) {
+          const params = albumSearchParams(sort.value, reverse, favoris)
+          expect(parseAlbumSort(params.tri ?? null)).toBe(sort.value)
+          expect(parseReverse(params.sens ?? null)).toBe(reverse)
+          expect(parseFavoris(params.favoris ?? null)).toBe(favoris)
+        }
       }
     }
   })

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 import { api, type AppUser } from '../api/client'
 import { formatDateTime } from '../components/format'
 import { useAuth } from '../state/auth'
@@ -186,6 +187,16 @@ function Utilisateurs() {
       api.setUserAdmin(id, isAdmin),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
   })
+  const supprimer = useMutation({
+    mutationFn: (id: number) => api.deleteUser(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+      // Les playlists de la personne sont parties avec elle, et le detail par
+      // personne des statistiques perd sa ligne.
+      queryClient.invalidateQueries({ queryKey: ['playlists'] })
+      queryClient.invalidateQueries({ queryKey: ['userStats'] })
+    },
+  })
 
   if (users.isLoading) return <p className="text-sm text-neutral-500">Chargement…</p>
   if (users.error) return <p className="text-sm text-red-400">{(users.error as Error).message}</p>
@@ -199,12 +210,14 @@ function Utilisateurs() {
       </h2>
       <p className="mb-3 text-xs text-neutral-500">
         Un administrateur peut nommer d’autres administrateurs. Seules les personnes déjà
-        connectées au moins une fois apparaissent ici.
+        connectées au moins une fois apparaissent ici. Supprimer un compte fait le ménage
+        dans cette liste : ses écoutes sont conservées, détachées de lui, mais ses playlists
+        partent avec lui — et il réapparaîtra s’il se reconnecte.
       </p>
 
-      {changer.error && (
+      {(changer.error || supprimer.error) && (
         <p className="mb-3 max-w-2xl rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-          {(changer.error as Error).message}
+          {((changer.error ?? supprimer.error) as Error).message}
         </p>
       )}
 
@@ -216,6 +229,8 @@ function Utilisateurs() {
             cestMoi={utilisateur.subject === moi.subject}
             enCours={changer.isPending}
             onChange={(isAdmin) => changer.mutate({ id: utilisateur.id, isAdmin })}
+            onSupprimer={() => supprimer.mutate(utilisateur.id)}
+            suppressionEnCours={supprimer.isPending}
           />
         ))}
       </ul>
@@ -228,12 +243,17 @@ function LigneUtilisateur({
   cestMoi,
   enCours,
   onChange,
+  onSupprimer,
+  suppressionEnCours,
 }: {
   utilisateur: AppUser
   cestMoi: boolean
   enCours: boolean
   onChange: (isAdmin: boolean) => void
+  onSupprimer: () => void
+  suppressionEnCours: boolean
 }) {
+  const [confirme, setConfirme] = useState(false)
   // Deux cas ou la bascule n'a pas de sens, et ou la desactiver vaut mieux que
   // de laisser cliquer pour un refus du serveur : un compte nomme dans la
   // configuration, et soi-meme — se retirer le role fermerait la porte
@@ -243,8 +263,21 @@ function LigneUtilisateur({
     ? 'Administrateur par la configuration du serveur'
     : 'Vous ne pouvez pas retirer votre propre rôle'
 
+  // Memes deux cas que le serveur refuse par un 409 : desactiver ici vaut
+  // mieux que de laisser cliquer pour un refus.
+  // Les deux phrases de l'avertissement accordent noms ET adjectifs : « 1
+  // playlist supprimée, même publique » et non « … même publiques ».
+  const pl = utilisateur.playlist_count > 1 ? 's' : ''
+  const ec = utilisateur.listen_count > 1 ? 's' : ''
+
+  const figeSuppression = cestMoi || utilisateur.is_super_admin
+  const raisonSuppression = cestMoi
+    ? 'Vous ne pouvez pas supprimer votre propre compte'
+    : 'Nommé dans la configuration : il reviendrait à sa prochaine connexion'
+
   return (
-    <li className="flex items-center gap-3 px-4 py-3">
+    <li className="px-4 py-3">
+      <div className="flex items-center gap-3">
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm text-neutral-100">
           {utilisateur.name}
@@ -275,6 +308,56 @@ function LigneUtilisateur({
         />
         Administrateur
       </label>
+
+      <button
+        onClick={() => setConfirme(true)}
+        disabled={figeSuppression || confirme}
+        title={figeSuppression ? raisonSuppression : 'Supprimer ce compte'}
+        aria-label={`Supprimer ${utilisateur.name}`}
+        className="shrink-0 text-sm text-neutral-500 hover:text-red-400 disabled:opacity-30 disabled:hover:text-neutral-500"
+      >
+        Supprimer
+      </button>
+      </div>
+
+      {/* Une confirmation en ligne plutot qu'un dialogue : elle peut dire ce
+          qui part et ce qui reste, ce qu'un « Êtes-vous sûr ? » ne fait pas. */}
+      {confirme && (
+        <div className="mt-3 rounded-lg border border-red-500/40 bg-red-500/5 px-4 py-3">
+          <p className="text-sm text-neutral-200">
+            Supprimer « {utilisateur.name} » ?
+          </p>
+          <ul className="mt-2 space-y-0.5 text-xs text-neutral-400">
+            <li>
+              {utilisateur.playlist_count === 0
+                ? 'Aucune playlist à perdre.'
+                : `${utilisateur.playlist_count} playlist${pl} supprimée${pl}, même publique${pl} ou partagée${pl}.`}
+            </li>
+            <li>
+              {utilisateur.listen_count === 0
+                ? 'Aucune écoute enregistrée.'
+                : `${utilisateur.listen_count} écoute${ec} conservée${ec}, détachée${ec} du compte : les totaux ne bougent pas.`}
+            </li>
+            <li>Ses likes et ses favoris sont supprimés.</li>
+            <li>Il réapparaîtra s’il se reconnecte.</li>
+          </ul>
+          <div className="mt-3 flex gap-2">
+            <button
+              onClick={() => setConfirme(false)}
+              className="rounded-full border border-neutral-700 px-4 py-1.5 text-sm text-neutral-300 hover:border-neutral-500"
+            >
+              Annuler
+            </button>
+            <button
+              onClick={onSupprimer}
+              disabled={suppressionEnCours}
+              className="rounded-full bg-red-500/90 px-4 py-1.5 text-sm font-medium text-neutral-950 hover:bg-red-400 disabled:opacity-40"
+            >
+              Supprimer
+            </button>
+          </div>
+        </div>
+      )}
     </li>
   )
 }

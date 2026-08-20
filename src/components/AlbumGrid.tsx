@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import type { Album } from '../api/client'
 import { AlbumMenu } from './AlbumMenu'
+import { FavoriteButton } from './FavoriteButton'
 import { Cover } from './Cover'
 
 export function AlbumGrid({ albums }: { albums: Album[] }) {
@@ -25,6 +26,14 @@ export function AlbumGrid({ albums }: { albums: Album[] }) {
           {/* Se place lui-meme sur la pochette : il doit se reperer par
               rapport a la vignette, pas par rapport a un coin. */}
           <AlbumMenu albumId={album.id} albumTitle={album.title} />
+          {/* En vis-a-vis du kebab, a l'autre coin de la pochette. */}
+          <FavoriteButton
+            albumId={album.id}
+            albumTitle={album.title}
+            discret
+            size="h-5 w-5"
+            className="absolute left-3 top-3 z-10 rounded-full bg-neutral-950/70 p-1 backdrop-blur"
+          />
           <div className="truncate text-sm font-medium text-neutral-100">{album.title}</div>
           <div className="truncate text-xs text-neutral-500">
             {album.year ? `${album.year} · ` : ''}
