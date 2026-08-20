@@ -1,4 +1,5 @@
 import { ServerClock } from './clock'
+import { DRIFT_WINDOW, estimatedDrift } from './drift'
 import { decodeInterleaved, parseWaveHeader, type PcmFormat } from './pcm'
 
 /**
@@ -22,9 +23,13 @@ import { decodeInterleaved, parseWaveHeader, type PcmFormat } from './pcm'
  * de quelques millisecondes par dizaine de minutes. Sans recalage, l'écart
  * grandit indéfiniment : c'est la dérive constatée sur une longue écoute.
  *
- * 15 ms : au-dessus du bruit de mesure (`currentTime` avance par blocs de
- * rendu, ~2,7 ms à 48 kHz) et en dessous du seuil où un décalage entre pièces
- * s'entend.
+ * 15 ms : en dessous du seuil où un décalage entre pièces s'entend.
+ *
+ * Ce seuil ne s'applique PAS à une mesure isolée. `currentTime` se met en
+ * retard sous charge, par à-coups qui dépassent largement 15 ms, et décider
+ * sur une mesure unique déclenchait un recalage plusieurs fois par seconde —
+ * chacun produisant le trou qu'il était censé éviter. La décision porte donc
+ * sur une fenêtre de mesures, voir `drift.ts`.
  */
 const MAX_ANCHOR_DRIFT_MS = 15
 
@@ -37,6 +42,9 @@ export class SnapPlayer {
   /** Ancrage entre l'horloge locale et celle de l'AudioContext. */
   private anchorLocalMs = 0
   private anchorContextTime = 0
+
+  /** Mesures récentes de dérive, pour décider sur autre chose que du bruit. */
+  private driftSamples: number[] = []
 
   private lateChunks = 0
   private playedChunks = 0
@@ -145,8 +153,16 @@ export class SnapPlayer {
    * ces corrections, pour qu'une dérive anormale se voie.
    */
   private correctDrift(): void {
-    if (Math.abs(this.anchorDriftMs) < MAX_ANCHOR_DRIFT_MS) return
+    this.driftSamples.push(this.anchorDriftMs)
+    if (this.driftSamples.length > DRIFT_WINDOW) this.driftSamples.shift()
+
+    const drift = estimatedDrift(this.driftSamples)
+    if (drift === null || Math.abs(drift) < MAX_ANCHOR_DRIFT_MS) return
+
     this.reanchor()
+    // La fenêtre décrit l'ancrage précédent : la garder ferait re-déclencher
+    // aussitôt sur des mesures qui n'ont plus cours.
+    this.driftSamples = []
     this.resyncs++
   }
 
@@ -166,6 +182,7 @@ export class SnapPlayer {
     }
     this.scheduled.clear()
     this.reanchor()
+    this.driftSamples = []
     this.resyncs++
   }
 

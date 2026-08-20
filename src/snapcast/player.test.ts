@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ServerClock } from './clock'
+import { DRIFT_WINDOW } from './drift'
 import { SnapPlayer } from './player'
 
 /** En-tête RIFF WAVE minimal, tel que snapserver l'envoie pour le codec pcm. */
@@ -87,17 +88,49 @@ describe('SnapPlayer — derive entre horloge systeme et horloge audio', () => {
     expect(player.stats.resyncs).toBe(0)
   })
 
-  it("recale l'ancrage des que l'ecart devient audible", async () => {
+  it("recale l'ancrage quand l'ecart audible SE MAINTIENT", async () => {
     const player = await startedPlayer()
     // Meme duree, mais l'horloge audio a pris 40 ms de retard.
     advance(600_000, 599_960)
     expect(player.anchorDriftMs).toBeCloseTo(40, 0)
 
+    // Une mesure isolee ne decide de rien : il faut une fenetre pleine.
     player.enqueue(chunk(), nowMs)
+    expect(player.stats.resyncs).toBe(0)
+
+    // L'ecart se maintient morceau apres morceau : c'est une vraie derive.
+    for (let i = 1; i < DRIFT_WINDOW; i++) {
+      advance(20, 20)
+      player.enqueue(chunk(), nowMs)
+    }
 
     expect(player.stats.resyncs).toBe(1)
     // Apres recalage, les deux horloges racontent de nouveau la meme chose.
     expect(player.anchorDriftMs).toBeCloseTo(0, 3)
+  })
+
+  it('ne recale pas sur un a-coup de rendu isole', async () => {
+    /**
+     * Le defaut du 2026-08-20, reproduit ici. `currentTime` se met en retard
+     * par a-coups sous charge — jusqu'a 64 ms mesures sur cette machine —
+     * alors que les deux horloges sont en phase. Chaque a-coup pris pour une
+     * derive declenchait un recalage, donc un saut de 15 a 20 ms dans un
+     * morceau qui en dure 20 : c'est le son hache.
+     */
+    const player = await startedPlayer()
+
+    for (let i = 0; i < DRIFT_WINDOW * 3; i++) {
+      // `currentTime` ne recule jamais : elle STAGNE le temps de trois
+      // morceaux, puis rattrape tout d'un coup. La derive mesuree monte donc
+      // a 60 ms — bien au-dela du seuil — sans qu'aucune horloge ait derive.
+      const rang = i % 20
+      const stagne = rang < 3
+      const rattrape = rang === 3
+      advance(20, stagne ? 0 : rattrape ? 80 : 20)
+      player.enqueue(chunk(), nowMs)
+    }
+
+    expect(player.stats.resyncs).toBe(0)
   })
 
   it('une resynchronisation forcee vide ce qui etait programme', async () => {
