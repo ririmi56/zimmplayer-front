@@ -28,7 +28,9 @@ export function Settings() {
         <p className="mb-3 text-xs text-neutral-500">
           Chaque appareil est regroupé sous la session qu'il écoute, synchronisé avec les autres
           qui l'écoutent aussi — ou « à part » s'il n'en écoute aucune. Cliquez sur un nom pour le
-          renommer.
+          renommer, et choisissez une session dans la liste déroulante pour l'y déplacer. Vous
+          déplacez toujours ce navigateur ; déplacer un autre appareil demande d'être
+          administrateur.
         </p>
         <SnapMembers />
       </section>

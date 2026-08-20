@@ -2,8 +2,36 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { api, type SessionSummary, type SnapClient, type SnapGroup } from '../api/client'
 import { browserClientId, isBrowserClient } from '../snapcast/client'
+import { useAuth } from '../state/auth'
+import { apartStream, groupOf, planMove } from './snapMove'
 
 type Member = { client: SnapClient; group: SnapGroup }
+
+/**
+ * Valeur du choix « à part » dans le selecteur.
+ *
+ * Une sentinelle, et non l'identifiant du flux ou l'on range ces appareils :
+ * celui-ci depend des sessions existantes, alors que le choix, lui, est
+ * toujours le meme.
+ */
+const APART = 'apart'
+
+/**
+ * De quoi proposer une destination sur chaque ligne.
+ *
+ * Rassemble en un objet ce que le selecteur reclame, plutot que de faire
+ * descendre cinq props a travers `SessionCluster` : la liste des sessions, le
+ * flux ou ranger un appareil qui n'en ecoute aucune, qui a le droit de
+ * deplacer quoi, et l'appel lui-meme.
+ */
+type MoveUi = {
+  sessions: SessionSummary[]
+  apartStreamId: string | null
+  /** On se deplace toujours soi-meme ; deplacer autrui demande le role. */
+  allowed: (clientId: string) => boolean
+  onMove: (clientId: string, streamId: string) => void
+  pending: boolean
+}
 
 /**
  * Membres Snapcast, regroupes par session — n'importe laquelle, pas seulement
@@ -37,6 +65,35 @@ export function SnapMembers() {
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['snapcast-status'] })
 
+  // Sans OIDC, personne n'est distingue : tout le monde est administrateur.
+  const auth = useAuth()
+  const estAdmin = !auth.oidc_enabled || auth.role === 'admin'
+
+  const deplacer = useMutation({
+    mutationFn: async ({ clientId, streamId }: { clientId: string; streamId: string }) => {
+      const plan = planMove(status.data?.groups ?? [], clientId, streamId)
+      switch (plan.kind) {
+        case 'none':
+          return
+        case 'join':
+          await api.setGroupClients(plan.groupId, plan.clientIds)
+          return
+        case 'retarget':
+          await api.setGroupStream(plan.groupId, plan.streamId)
+          return
+        case 'detach': {
+          // Le groupe neuf n'existe qu'apres cet appel : son identifiant se lit
+          // dans la reponse, pas avant.
+          const apres = await api.setGroupClients(plan.groupId, plan.keep)
+          const neuf = groupOf(apres, clientId)
+          if (!neuf) throw new Error("Snapserver n'a pas dit où il a placé cet appareil.")
+          await api.setGroupStream(neuf, plan.streamId)
+        }
+      }
+    },
+    onSuccess: refresh,
+  })
+
   if (status.isLoading || sessions.isLoading) {
     return <p className="text-sm text-neutral-500">Chargement…</p>
   }
@@ -69,8 +126,25 @@ export function SnapMembers() {
   const claimed = new Set(bySession.flatMap((b) => b.members.map((m) => m.client.id)))
   const apart = members.filter((m) => !claimed.has(m.client.id))
 
+  const move: MoveUi = {
+    sessions: sessionList,
+    apartStreamId: apartStream(
+      status.data.streams,
+      sessionList.map((s) => s.snapcast_stream_id),
+    ),
+    allowed: (clientId) => estAdmin || clientId === myClientId,
+    onMove: (clientId, streamId) => deplacer.mutate({ clientId, streamId }),
+    pending: deplacer.isPending,
+  }
+
   return (
     <div className="space-y-6">
+      {deplacer.error && (
+        <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          {(deplacer.error as Error).message}
+        </p>
+      )}
+
       <Filtre
         enLigneSeulement={enLigneSeulement}
         onChange={setEnLigneSeulement}
@@ -91,6 +165,7 @@ export function SnapMembers() {
           session={session}
           members={inSession}
           myClientId={myClientId}
+          move={move}
           onChanged={refresh}
         />
       ))}
@@ -107,6 +182,7 @@ export function SnapMembers() {
                 member={m}
                 isMe={m.client.id === myClientId}
                 playing={m.group.stream_id}
+                move={move}
                 onChanged={refresh}
               />
             ))}
@@ -170,11 +246,13 @@ function SessionCluster({
   session,
   members,
   myClientId,
+  move,
   onChanged,
 }: {
   session: SessionSummary
   members: Member[]
   myClientId: string | null
+  move: MoveUi
   onChanged: () => void
 }) {
   return (
@@ -187,7 +265,13 @@ function SessionCluster({
       ) : (
         <ul className="divide-y divide-neutral-800/60 rounded-lg border border-neutral-800 bg-neutral-950">
           {members.map((m) => (
-            <ClientRow key={m.client.id} member={m} isMe={m.client.id === myClientId} onChanged={onChanged} />
+            <ClientRow
+              key={m.client.id}
+              member={m}
+              isMe={m.client.id === myClientId}
+              move={move}
+              onChanged={onChanged}
+            />
           ))}
         </ul>
       )}
@@ -196,15 +280,17 @@ function SessionCluster({
 }
 
 function ClientRow({
-  member: { client },
+  member: { client, group },
   isMe,
   playing,
+  move,
   onChanged,
 }: {
   member: Member
   isMe: boolean
   /** Ce que joue cet appareil, affiche seulement quand ce n'est aucune session. */
   playing?: string | null
+  move: MoveUi
   onChanged: () => void
 }) {
   // Le curseur doit rester fluide : on l'affiche localement et on n'envoie la
@@ -282,6 +368,8 @@ function ClientRow({
         </div>
       </div>
 
+      <Destination client={client} group={group} move={move} />
+
       <button
         onClick={() => toggleMute.mutate()}
         title={client.muted ? 'Réactiver' : 'Couper'}
@@ -308,5 +396,67 @@ function ClientRow({
         {volume}%
       </span>
     </li>
+  )
+}
+
+/**
+ * Ce que cet appareil doit ecouter : une session, ou aucune.
+ *
+ * Un selecteur plutot qu'un glisser-deposer : l'action est bien de choisir une
+ * destination, et elle reste utilisable au clavier comme au doigt.
+ *
+ * Chacun deplace le navigateur qu'il a sous la main sans rien demander ;
+ * deplacer un autre appareil est reserve aux administrateurs. Le serveur ne
+ * peut pas trancher a notre place — il ne sait pas quel snapclient est quel
+ * navigateur — donc la regle ne vaut que dans cette interface.
+ */
+function Destination({
+  client,
+  group,
+  move,
+}: {
+  client: SnapClient
+  group: SnapGroup
+  move: MoveUi
+}) {
+  // Un groupe sans flux n'est la session de personne : sans cette garde, il
+  // s'apparierait avec une session dont le flux n'est pas encore enregistre.
+  const courante = group.stream_id
+    ? move.sessions.find((s) => s.snapcast_stream_id === group.stream_id)
+    : undefined
+  const autorise = move.allowed(client.id)
+
+  return (
+    <select
+      value={courante ? String(courante.id) : APART}
+      disabled={!autorise || move.pending}
+      aria-label={`Session de ${client.name}`}
+      title={autorise ? undefined : "Seul un administrateur déplace un autre appareil"}
+      onChange={(event) => {
+        const choix = event.target.value
+        const streamId =
+          choix === APART
+            ? move.apartStreamId
+            : move.sessions.find((s) => String(s.id) === choix)?.snapcast_stream_id
+        if (streamId) move.onMove(client.id, streamId)
+      }}
+      className="shrink-0 rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs text-neutral-100 focus:border-neutral-500 focus:outline-none disabled:opacity-40"
+    >
+      {move.sessions.map((session) => (
+        <option
+          key={session.id}
+          value={String(session.id)}
+          // Une session dont le flux n'est pas enregistre aupres de snapserver
+          // n'a rien a faire ecouter.
+          disabled={!session.snapcast_stream_id}
+        >
+          {session.name}
+        </option>
+      ))}
+      {/* Sans flux libre ou ranger l'appareil, « à part » n'est pas atteignable. */}
+      <option value={APART} disabled={!move.apartStreamId}>
+        À part
+      </option>
+    </select>
   )
 }
