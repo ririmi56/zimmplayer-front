@@ -47,6 +47,11 @@ export function PlaylistDetail() {
     },
   })
 
+  const tracks = playlist.data?.items.map((item) => item.track) ?? []
+  // Avant les retours anticipes : `useLire` appelle des hooks, qui ne
+  // supportent pas d'etre sautes selon l'etat du chargement.
+  const lire = useLire(tracks)
+
   if (playlist.isLoading) return <p className="text-sm text-neutral-500">Chargement…</p>
   if (playlist.error)
     return (
@@ -59,7 +64,6 @@ export function PlaylistDetail() {
     )
 
   const data = playlist.data!
-  const tracks = data.items.map((item) => item.track)
 
   const annulerDepot = () => {
     setSaisi(null)
@@ -130,6 +134,7 @@ export function PlaylistDetail() {
                 validerDepot()
               }}
               onDragEnd={annulerDepot}
+              onDoubleClick={() => lire(rang)}
               className={[
                 'group flex items-center gap-3 rounded border-y-2 px-2 py-2',
                 // Repère d'insertion. Les bordures existent toujours, en
@@ -141,11 +146,25 @@ export function PlaylistDetail() {
                 item.id === saisi ? 'opacity-40' : '',
               ].join(' ')}
             >
-              <Cover
-                albumId={item.track.album_id}
-                hasCover={item.track.has_cover}
-                className="h-9 w-9 shrink-0 rounded"
-              />
+              {/* La pochette fait bouton : c'est l'equivalent du numero de
+                  piste d'un album, qui devient ▶ au survol. Double-cliquer la
+                  ligne marche aussi, la ou le glisser-deposer n'attend qu'un
+                  simple clic. */}
+              <button
+                onClick={() => lire(rang)}
+                title="Lire à partir de ce titre"
+                aria-label={`Lire à partir de ${item.track.title}`}
+                className="relative h-9 w-9 shrink-0 overflow-hidden rounded"
+              >
+                <Cover
+                  albumId={item.track.album_id}
+                  hasCover={item.track.has_cover}
+                  className="h-9 w-9"
+                />
+                <span className="absolute inset-0 hidden items-center justify-center bg-neutral-950/60 text-neutral-100 group-hover:flex">
+                  ▶
+                </span>
+              </button>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm text-neutral-100">{item.track.title}</div>
                 <div className="truncate text-xs text-neutral-500">
@@ -240,22 +259,35 @@ function Titre({ playlist, onDone }: { playlist: Detail; onDone: () => void }) {
   )
 }
 
-/** Lire la playlist, ou l'envoyer dans la file — selon qu'on est en session. */
-function Lecture({ tracks }: { tracks: Detail['items'][number]['track'][] }) {
+type Piste = Detail['items'][number]['track']
+
+/**
+ * Lancer la playlist a partir d'un titre donne, en session ou en solo.
+ *
+ * Le meme geste que sur un album : le reste de la playlist suit, dans son
+ * ordre. Le bouton « Lire » de l'en-tete n'est que le cas `position = 0`.
+ */
+function useLire(tracks: Piste[]) {
   const playQueue = usePlayer((s) => s.playQueue)
   const { data: session } = useCurrentSession()
-  const enqueue = useEnqueue()
   const playNowInSession = usePlayNowInSession()
+  return (position: number) =>
+    session
+      ? playNowInSession.mutate({ trackIds: tracks.map((t) => t.id), startIndex: position })
+      : playQueue(tracks, position)
+}
+
+/** Lire la playlist, ou l'envoyer dans la file — selon qu'on est en session. */
+function Lecture({ tracks }: { tracks: Piste[] }) {
+  const { data: session } = useCurrentSession()
+  const enqueue = useEnqueue()
+  const lire = useLire(tracks)
   if (tracks.length === 0) return null
 
   return (
     <>
       <button
-        onClick={() =>
-          session
-            ? playNowInSession.mutate({ trackIds: tracks.map((t) => t.id), startIndex: 0 })
-            : playQueue(tracks, 0)
-        }
+        onClick={() => lire(0)}
         className="rounded-full bg-emerald-500 px-5 py-2 text-sm font-medium text-neutral-950 hover:bg-emerald-400"
       >
         Lire
