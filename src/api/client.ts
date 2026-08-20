@@ -150,6 +150,8 @@ export const api = {
   },
   authStatus: () => request<AuthStatus>('/api/auth/me'),
   users: () => request<AppUser[]>('/api/admin/users'),
+  deleteUser: (id: number) =>
+    request<void>(`/api/admin/users/${id}`, { method: 'DELETE' }),
   people: () => request<Person[]>('/api/users'),
 
   stats: () => request<GlobalStats>('/api/stats'),
