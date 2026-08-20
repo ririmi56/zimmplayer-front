@@ -66,6 +66,25 @@ server {
         proxy_request_buffering off;
     }
 
+    # Sonde, pour l'image comme pour les orchestrateurs : elle sert de
+    # vivacite et de disponibilite a la fois, nginx n'ayant rien a preparer
+    # avant de servir des fichiers deja presents dans l'image.
+    #
+    # Volontairement sans le moindre upstream : lier l'etat du front a celui
+    # de l'API ferait retirer l'interface du service a chaque panne de l'API,
+    # alors qu'elle sait justement afficher l'erreur. La cascade rendrait la
+    # panne muette au lieu de la rendre lisible.
+    #
+    # `access_log off` : interrogee toutes les dix secondes, elle noierait
+    # sinon les journaux d'acces.
+    location = /healthz {
+        access_log off;
+        # Sans cela nginx sert ce texte en application/octet-stream, ce qui
+        # fait proposer un telechargement a qui l'ouvre dans un navigateur.
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
     # Application React (routage cote client).
     location / {
         root /usr/share/nginx/html;

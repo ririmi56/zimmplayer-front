@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ServerClock } from './clock'
 import { DRIFT_WINDOW } from './drift'
-import { SnapPlayer } from './player'
+import { GesteRequis, SnapPlayer } from './player'
 
 /** En-tête RIFF WAVE minimal, tel que snapserver l'envoie pour le codec pcm. */
 function waveHeader(sampleRate = 48000, channels = 2, bits = 16): Uint8Array {
@@ -143,5 +143,50 @@ describe('SnapPlayer — derive entre horloge systeme et horloge audio', () => {
 
     expect(player.stats.resyncs).toBe(1)
     expect(player.anchorDriftMs).toBeCloseTo(0, 3)
+  })
+})
+
+/**
+ * Le defaut du 2026-08-20 : apres un rechargement de page en mode session, le
+ * navigateur ne se rebranchait pas au flux, et l'interface affichait pourtant
+ * « en ecoute ». La cause tient dans `resume()`.
+ */
+describe('SnapPlayer.start — quand le navigateur refuse la sortie audio', () => {
+  let context: FakeAudioContext
+
+  beforeEach(() => {
+    context = new FakeAudioContext()
+    vi.stubGlobal('AudioContext', function () {
+      return context
+    })
+    vi.stubGlobal('performance', { timeOrigin: 0, now: () => 1_000_000 })
+  })
+
+  afterEach(() => vi.unstubAllGlobals())
+
+  const player = () => new SnapPlayer(new ServerClock(), 1000, 0)
+
+  it('rend la main quand le contexte demarre', async () => {
+    await expect(player().start()).resolves.toBeUndefined()
+  })
+
+  it("leve GesteRequis quand `resume()` ne repond JAMAIS", async () => {
+    // C'est le comportement reel de Chrome sans geste utilisateur : la
+    // promesse n'est ni tenue ni rejetee, elle reste en attente. Un simple
+    // `await` ne rendait donc jamais la main — et tout ce qui suit le
+    // demarrage, dont l'ouverture de la WebSocket, n'avait jamais lieu.
+    context.state = 'suspended'
+    context.resume = vi.fn(() => new Promise<void>(() => {}))
+
+    await expect(player().start()).rejects.toBeInstanceOf(GesteRequis)
+  })
+
+  it("leve GesteRequis quand `resume()` repond sans demarrer", async () => {
+    // Variante : la promesse est tenue, mais le contexte reste suspendu.
+    // Seul l'etat compte, jamais le fait que `resume()` ait repondu.
+    context.state = 'suspended'
+    context.resume = vi.fn(async () => {})
+
+    await expect(player().start()).rejects.toBeInstanceOf(GesteRequis)
   })
 })

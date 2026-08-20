@@ -33,6 +33,28 @@ import { decodeInterleaved, parseWaveHeader, type PcmFormat } from './pcm'
  */
 const MAX_ANCHOR_DRIFT_MS = 15
 
+/**
+ * Attente maximale accordée à `AudioContext.resume()`.
+ *
+ * Autorisé, il rend la main immédiatement. Refusé faute de geste utilisateur,
+ * il n'échoue pas : il ne répond jamais. Cette borne transforme ce silence en
+ * refus explicite. Large par rapport au cas nominal, pour ne pas déclarer un
+ * refus sur une machine simplement lente à ouvrir sa carte son.
+ */
+const RESUME_TIMEOUT_MS = 500
+
+/**
+ * Le navigateur refuse d'ouvrir la sortie audio tant qu'aucun geste
+ * utilisateur n'a eu lieu sur la page. Ce n'est pas une panne : il suffit de
+ * réessayer au premier clic venu (voir `useSnapclient`).
+ */
+export class GesteRequis extends Error {
+  constructor() {
+    super("Le navigateur exige un geste utilisateur pour ouvrir l'audio")
+    this.name = 'GesteRequis'
+  }
+}
+
 export class SnapPlayer {
   private context: AudioContext | null = null
   private gain: GainNode | null = null
@@ -84,14 +106,27 @@ export class SnapPlayer {
     return (this.toContextTime(nowLocalMs) - this.context.currentTime) * 1000
   }
 
-  /** Doit être appelé depuis un geste utilisateur : politique d'autoplay. */
+  /**
+   * Ouvre la sortie audio. Lève `GesteRequis` si le navigateur la refuse.
+   *
+   * Doit être appelé depuis un geste utilisateur : politique d'autoplay. Sans
+   * geste, `resume()` ne rejette PAS — sa promesse reste en attente,
+   * indéfiniment. Un simple `await` ne rendait donc jamais la main, et tout ce
+   * qui suit le démarrage (l'ouverture de la WebSocket, notamment) n'avait
+   * jamais lieu, sans la moindre erreur pour le dire.
+   *
+   * On borne donc l'attente et on juge sur l'état réel du contexte, seul fait
+   * qui compte : `running` ou pas.
+   */
   async start(): Promise<void> {
     if (this.context === null) {
       this.context = new AudioContext({ latencyHint: 'playback' })
       this.gain = this.context.createGain()
       this.gain.connect(this.context.destination)
     }
-    await this.context.resume()
+    const attente = new Promise((resolve) => setTimeout(resolve, RESUME_TIMEOUT_MS))
+    await Promise.race([this.context.resume(), attente])
+    if (this.context.state !== 'running') throw new GesteRequis()
     this.reanchor()
   }
 
