@@ -25,6 +25,7 @@ import { Stats } from './routes/Stats'
 import { useAuth } from './state/auth'
 import { Connexion } from './routes/Connexion'
 import { useCurrentSession } from './state/session'
+import { VERSION } from './version'
 
 /**
  * Navigation en trois blocs : ce qui joue, ce qu'on parcourt, le reste.
@@ -145,6 +146,11 @@ export default function App() {
             </div>
           ))}
           <MonCompte />
+          {/* Discret par choix : on veut pouvoir dire quelle version tourne
+              sans qu'elle occupe l'ecran de qui ecoute de la musique. */}
+          <div className="px-2 pt-2 text-[11px] tabular-nums text-neutral-600">
+            {VERSION}
+          </div>
         </nav>
 
         <main className="min-w-0 flex-1 overflow-y-auto">
