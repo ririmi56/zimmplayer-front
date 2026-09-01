@@ -706,6 +706,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sessions/{session_id}/queue/shuffle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Shuffle Queue
+         * @description Rebat la suite de la file. La lecture en cours n'est pas interrompue :
+         *     seules changent les positions des titres qui viennent apres elle.
+         */
+        post: operations["shuffle_queue_api_sessions__session_id__queue_shuffle_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sessions/{session_id}/queue/{item_id}/move": {
         parameters: {
             query?: never;
@@ -1107,8 +1128,64 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Health */
+        /**
+         * Health
+         * @description Diagnostic humain : repond toujours 200, l'etat est dans le corps.
+         *
+         *     C'est la route documentee depuis toujours ; les orchestrateurs, eux,
+         *     utilisent /api/health/live et /api/health/ready, qui repondent par leur
+         *     code HTTP.
+         */
         get: operations["health_api_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/health/live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Live
+         * @description Le processus repond-il encore ?
+         *
+         *     Volontairement sans aucune dependance : une sonde de vivacite qui touche
+         *     la base ferait TUER l'API a chaque indisponibilite de MariaDB, alors que
+         *     le redemarrage n'y changerait rien — et le redemarrage en boucle
+         *     empecherait la reprise au retour de la base.
+         */
+        get: operations["live_api_health_live_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/health/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ready
+         * @description Peut-on lui envoyer du trafic ?
+         *
+         *     Presque toutes les routes lisent la base : sans elle, l'API repondrait des
+         *     erreurs a tout le monde. Un 503 la retire du service le temps que la base
+         *     revienne, sans que le processus soit tue.
+         */
+        get: operations["ready_api_health_ready_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1575,12 +1652,17 @@ export interface components {
              * @default 0
              */
             item_count: number;
+            /** Is Playing */
+            is_playing: boolean;
+            /**
+             * Upcoming Count
+             * @default 0
+             */
+            upcoming_count: number;
             /** Items */
             items: components["schemas"]["QueueItemOut"][];
             /** Current Item Id */
             current_item_id: number | null;
-            /** Is Playing */
-            is_playing: boolean;
             /** Position S */
             position_s: number;
             /** Command Seq */
@@ -1606,6 +1688,16 @@ export interface components {
              * @default 0
              */
             item_count: number;
+            /**
+             * Is Playing
+             * @default false
+             */
+            is_playing: boolean;
+            /**
+             * Upcoming Count
+             * @default 0
+             */
+            upcoming_count: number;
         };
         /** SessionStats */
         SessionStats: {
@@ -1706,6 +1798,11 @@ export interface components {
              * @default false
              */
             has_lyrics: boolean;
+            /**
+             * Listen Count
+             * @default 0
+             */
+            listen_count: number;
             /**
              * Overrides
              * @default {}
@@ -2018,7 +2115,7 @@ export interface operations {
                 q?: string | null;
                 artist_id?: number | null;
                 genre?: string | null;
-                sort?: "artiste" | "titre" | "annee" | "ajout" | "genre" | "likes" | "favoris";
+                sort?: "artiste" | "titre" | "annee" | "ajout" | "genre" | "likes" | "favoris" | "lectures";
                 reverse?: boolean;
                 favoris?: boolean;
                 limit?: number;
@@ -3252,6 +3349,39 @@ export interface operations {
             };
         };
     };
+    shuffle_queue_api_sessions__session_id__queue_shuffle_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-user-name"?: string | null;
+            };
+            path: {
+                session_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     move_in_queue_api_sessions__session_id__queue__item_id__move_post: {
         parameters: {
             query?: never;
@@ -4030,6 +4160,50 @@ export interface operations {
         };
     };
     health_api_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+        };
+    };
+    live_api_health_live_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+        };
+    };
+    ready_api_health_ready_get: {
         parameters: {
             query?: never;
             header?: never;

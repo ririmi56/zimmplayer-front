@@ -74,6 +74,7 @@ export type AlbumSort =
   | 'genre'
   | 'likes'
   | 'favoris'
+  | 'lectures'
 
 /** Pseudo courant, lu au moment de l'appel pour suivre les changements. */
 let userName = 'anonyme'

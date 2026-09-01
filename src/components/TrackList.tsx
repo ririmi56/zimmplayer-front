@@ -67,6 +67,24 @@ export function TrackList({ tracks, showAlbum = false, onEdit }: Props) {
             </div>
 
             <span className="shrink-0 text-xs uppercase text-neutral-600">{track.format}</span>
+            {/* Le compteur de lectures. Toujours visible, y compris a zero :
+                c'est le zero qui porte l'information — un titre que personne
+                n'a jamais lance se repere du coin de l'oeil, et c'est de la
+                que partira le menage du bucket. Grise a zero pour ne pas
+                encombrer, sans disparaitre. */}
+            <span
+              title={
+                track.listen_count === 0
+                  ? 'Jamais écouté'
+                  : `${track.listen_count} lecture${track.listen_count > 1 ? 's' : ''}` +
+                    ' — comptées par personne'
+              }
+              className={`w-8 shrink-0 text-right text-xs tabular-nums ${
+                track.listen_count === 0 ? 'text-neutral-700' : 'text-neutral-500'
+              }`}
+            >
+              {track.listen_count}
+            </span>
             {inSession && (
               <button
                 onClick={() => enqueue.mutate({ track_ids: [track.id] })}
