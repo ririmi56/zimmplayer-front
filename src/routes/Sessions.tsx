@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { api } from '../api/client'
+import { Equaliseur } from '../components/Equaliseur'
 import { formatDateTime } from '../components/format'
 import { useSnapclient } from '../snapcast/useSnapclient'
 import { useIdentity } from '../state/identity'
@@ -119,10 +120,31 @@ export function Sessions() {
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-neutral-100">{session.name}</span>
+                  {/* L'egaliseur ne s'affiche QUE pendant la lecture : c'est
+                      son absence qui dit « en pause », sans mot de plus. */}
+                  {session.is_playing && (
+                    <span
+                      title="Lecture en cours"
+                      className="flex items-center gap-1.5 text-emerald-400"
+                    >
+                      <Equaliseur />
+                      <span className="text-[11px] uppercase tracking-wide">en lecture</span>
+                    </span>
+                  )}
                 </div>
                 <div className="text-xs text-neutral-500">
-                  {session.item_count} titre{session.item_count > 1 ? 's' : ''} ·{' '}
-                  {listenerCount(session.snapcast_stream_id)} appareil
+                  {/* « restants sur total » plutot que le seul total : savoir
+                      qu'une session touche a sa fin est ce qui decide si on
+                      la rejoint ou si on y ajoute quelque chose. */}
+                  <span
+                    title={`${session.upcoming_count} titre${
+                      session.upcoming_count > 1 ? 's' : ''
+                    } à suivre, sur ${session.item_count} en file`}
+                  >
+                    {session.upcoming_count}/{session.item_count} titre
+                    {session.item_count > 1 ? 's' : ''} à suivre
+                  </span>{' '}
+                  · {listenerCount(session.snapcast_stream_id)} appareil
                   {listenerCount(session.snapcast_stream_id) > 1 ? 's' : ''} à l'écoute · créée
                   par {session.created_by} le {formatDateTime(session.created_at)}
                 </div>
