@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { AddToPlaylist } from '../components/AddToPlaylist'
 import { Cover } from '../components/Cover'
+import { LikeButton } from '../components/LikeButton'
 import { formatDuration } from '../components/format'
 import { useCurrentSession, useSessionControl } from '../state/session'
 import { useMediaPosition } from './mediaSession'
@@ -51,7 +53,12 @@ export function RemoteBar({
   useMediaPosition(position, total, isPlaying)
 
   return (
-    <footer className="flex h-20 shrink-0 items-center gap-4 border-t border-sky-900/60 bg-neutral-950 px-4">
+    // `relative z-20` : sans lui, les boutons favoris de la grille
+    // d'albums (z-10) passaient AU-DESSUS du panneau de volume, qui
+    // sort de la barre vers le haut. Le poser sur la barre entiere, et
+    // non sur le panneau, ferme la classe de defaut : tout ce qui
+    // deborde de la barre est desormais au-dessus du contenu qui defile.
+    <footer className="relative z-20 flex h-20 shrink-0 items-center gap-4 border-t border-sky-900/60 bg-neutral-950 px-4">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         {track ? (
           <>
@@ -69,6 +76,15 @@ export function RemoteBar({
                 {track.artist_name}
               </Link>
             </div>
+            {/* Aimer et ranger, sans quitter ce qu'on regarde : c'est en
+                ecoutant qu'on decide, pas en retournant a la liste. Les deux
+                memes composants que les listes de titres, donc le meme etat
+                partout — un coeur allume ici l'est aussi la-bas. */}
+            <LikeButton trackId={track.id} />
+            <AddToPlaylist
+              trackIds={[track.id]}
+              className="shrink-0 text-neutral-500 hover:text-emerald-400"
+            />
           </>
         ) : (
           <span className="text-sm text-neutral-500">File vide</span>
