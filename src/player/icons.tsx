@@ -13,7 +13,14 @@ export const ICONS = {
   // marque-page pour la playlist, qui se garde, et le triangle de lecture pour
   // la file, qui dit « a jouer ensuite ». Trois traits + « + » pour les deux,
   // comme avant, les rendait indiscernables.
-  playlistAdd: 'M6 3.5h7a1 1 0 011 1v12.5l-4.5-3.1L5 17V4.5a1 1 0 011-1zM18 14.5v6M15 17.5h6',
+  //
+  // Le CORPS du signet occupe toute la hauteur (4 -> 20) et le « + » chevauche
+  // son coin bas droit. Ce n'est pas un detail de dessin : c'est la masse du
+  // corps que l'oeil lit, pas la boite englobante de l'ensemble. Un signet
+  // petit, cale en haut, avec un « + » qui pend en dessous, se lit plus petit
+  // et plus haut que le coeur voisin — quel que soit le centrage de la boite.
+  // Verifie en rendant les deux cote a cote, a 16 px et agrandies.
+  playlistAdd: 'M5 4h7.5a1 1 0 011 1v15l-4.75-3.4L4 20V5a1 1 0 011-1zM17.5 14.5v6M14.5 17.5h6',
   queueAdd: 'M4 6h13M4 11h13M4 16h8M16 14.5l5.5 3.2-5.5 3.2z',
   // Contour quand le titre n'est pas aime, rempli quand il l'est : c'est le
   // meme trace, `Icon` s'occupe du remplissage.
