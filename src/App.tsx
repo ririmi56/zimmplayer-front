@@ -5,6 +5,7 @@ import { QueuePanel } from './components/QueuePanel'
 import { AudioEngine } from './player/AudioEngine'
 import { LyricsPanel } from './player/LyricsPanel'
 import { useMediaSession } from './player/mediaSession'
+import { useEspaceLecture } from './player/spacebar'
 import { PlayerBar } from './player/PlayerBar'
 import { RemoteBar } from './player/RemoteBar'
 import { SessionPresence } from './player/SessionPresence'
@@ -102,6 +103,9 @@ export default function App() {
   // Monte une seule fois, hors des routes : les commandes media du navigateur
   // et du systeme doivent survivre a la navigation, comme la lecture.
   useMediaSession()
+  // Espace = lecture/pause partout, et non plus seulement quand le bouton
+  // lecture a le focus. Monte ici, hors des routes, pour la meme raison.
+  useEspaceLecture()
 
   const remote = session != null
 
