@@ -10,6 +10,8 @@ describe('VERSION', () => {
   })
 
   it('ressemble a une version semantique', () => {
-    expect(VERSION).toMatch(/^\d+\.\d+\.\d+$/)
+    // Le suffixe est optionnel : `1.1.0-dev` pendant le cycle, `1.1.0` une
+    // fois fusionne sur master.
+    expect(VERSION).toMatch(/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/)
   })
 })

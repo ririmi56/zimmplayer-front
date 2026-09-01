@@ -23,6 +23,9 @@ export const ALBUM_SORTS: { value: AlbumSort; label: string }[] = [
   // additionne les likes des TITRES d'un album, celui-ci compte les personnes
   // qui ont mis L'ALBUM en favori. Les libelles doivent le dire.
   { value: 'favoris', label: 'Les plus mis en favori' },
+  // Somme des ecoutes des titres de l'album. Inverse, ce tri remonte ce que
+  // personne n'ecoute — c'est de la que part le menage du bucket.
+  { value: 'lectures', label: 'Les plus écoutés' },
 ]
 
 const VALUES = new Set(ALBUM_SORTS.map((sort) => sort.value))

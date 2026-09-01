@@ -34,8 +34,20 @@ export function AlbumGrid({ albums }: { albums: Album[] }) {
             size="h-5 w-5"
             className="absolute left-3 top-3 z-10 rounded-full bg-neutral-950/70 p-1 backdrop-blur"
           />
-          <div className="truncate text-sm font-medium text-neutral-100">{album.title}</div>
-          <div className="truncate text-xs text-neutral-500">
+          {/* `title` sur les deux lignes tronquees : la vignette est etroite,
+              et un titre coupe ne se devine pas. L'attribut n'ajoute rien
+              quand le texte tient — le navigateur n'affiche l'infobulle que
+              s'il y a lieu de la lire. */}
+          <div
+            title={album.title}
+            className="truncate text-sm font-medium text-neutral-100"
+          >
+            {album.title}
+          </div>
+          <div
+            title={album.artist_name}
+            className="truncate text-xs text-neutral-500"
+          >
             {album.year ? `${album.year} · ` : ''}
             {album.artist_name}
           </div>

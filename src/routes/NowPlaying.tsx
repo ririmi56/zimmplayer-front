@@ -10,7 +10,7 @@ import { resumer } from '../components/queueSummary'
 import { ICONS, Icon } from '../player/icons'
 import { useNowPlaying } from '../player/nowPlaying'
 import { type Entry, useQueueEntries } from '../player/queueEntries'
-import { useCurrentSession } from '../state/session'
+import { useCurrentSession, useSessionControl } from '../state/session'
 
 /**
  * Onglet « Lecture » : ce qui joue, en grand.
@@ -99,6 +99,7 @@ export function NowPlaying() {
               />
               <AddToPlaylist
                 trackIds={[track.id]}
+                size="h-5 w-5"
                 className="mt-2 rounded-full border border-neutral-700 p-2 text-neutral-300 hover:border-neutral-500 hover:text-neutral-100"
               />
             </div>
@@ -141,6 +142,7 @@ const QUEUE_HEIGHT = 'h-96'
  * au-dessus, la suite en dessous.
  */
 function Queue({ entries, upcoming }: { entries: Entry[]; upcoming: number }) {
+  const control = useSessionControl()
   const resume = resumer(
     entries.map((e) => ({ played: e.played, current: e.current, duration_s: e.track.duration_s })),
   )
@@ -206,6 +208,23 @@ function Queue({ entries, upcoming }: { entries: Entry[]; upcoming: number }) {
           >
             {formatSpan(resume.restantSecondes)} restantes
           </span>
+          {/* Meme geste que dans le panneau lateral : c'est la meme file. En
+              dessous de deux titres a suivre, il n'y a rien a rebattre. */}
+          {control.sessionId != null && upcoming >= 2 && (
+            <>
+              {' · '}
+              <button
+                onClick={control.shuffle}
+                title="Mélanger la suite"
+                aria-label="Mélanger la suite"
+                // `align-middle` : sans lui l'icone repose sur la ligne de
+                // base du texte et depasse sous les chiffres qui la precedent.
+                className="inline-flex align-middle text-neutral-400 hover:text-emerald-400"
+              >
+                <Icon path={ICONS.shuffle} className="h-4 w-4" />
+              </button>
+            </>
+          )}
         </p>
       </div>
       <ol

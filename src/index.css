@@ -26,3 +26,32 @@ body {
   background: var(--color-neutral-700);
   border-radius: 5px;
 }
+
+/* Egaliseur animé : trois barres qui montent et descendent, pour signaler
+   d'un coup d'oeil une session en cours de lecture. Anime `transform` et non
+   `height` — la hauteur relance la mise en page a chaque image, la
+   transformation reste sur le compositeur. */
+@keyframes barre-egaliseur {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.egaliseur-barre {
+  transform-origin: bottom;
+  animation: barre-egaliseur 900ms ease-in-out infinite;
+}
+
+/* Une animation qui ne s'arrete jamais est exactement ce que ce reglage
+   demande d'eviter. Les barres restent alors figees a mi-hauteur : le
+   signal reste lisible, il ne bouge plus. */
+@media (prefers-reduced-motion: reduce) {
+  .egaliseur-barre {
+    animation: none;
+    transform: scaleY(0.65);
+  }
+}
