@@ -10,7 +10,7 @@ import { resumer } from '../components/queueSummary'
 import { ICONS, Icon } from '../player/icons'
 import { useNowPlaying } from '../player/nowPlaying'
 import { type Entry, useQueueEntries } from '../player/queueEntries'
-import { useCurrentSession } from '../state/session'
+import { useCurrentSession, useSessionControl } from '../state/session'
 
 /**
  * Onglet « Lecture » : ce qui joue, en grand.
@@ -141,6 +141,7 @@ const QUEUE_HEIGHT = 'h-96'
  * au-dessus, la suite en dessous.
  */
 function Queue({ entries, upcoming }: { entries: Entry[]; upcoming: number }) {
+  const control = useSessionControl()
   const resume = resumer(
     entries.map((e) => ({ played: e.played, current: e.current, duration_s: e.track.duration_s })),
   )
@@ -206,6 +207,16 @@ function Queue({ entries, upcoming }: { entries: Entry[]; upcoming: number }) {
           >
             {formatSpan(resume.restantSecondes)} restantes
           </span>
+          {/* Meme geste que dans le panneau lateral : c'est la meme file. En
+              dessous de deux titres a suivre, il n'y a rien a rebattre. */}
+          {control.sessionId != null && upcoming >= 2 && (
+            <>
+              {' · '}
+              <button onClick={control.shuffle} className="hover:text-emerald-400">
+                Mélanger la suite
+              </button>
+            </>
+          )}
         </p>
       </div>
       <ol

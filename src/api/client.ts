@@ -239,6 +239,8 @@ export const api = {
     request<SessionDetail>(`/api/sessions/${id}/queue/${itemId}`, { method: 'DELETE' }),
   clearQueue: (id: number) =>
     request<SessionDetail>(`/api/sessions/${id}/queue`, { method: 'DELETE' }),
+  shuffleQueue: (id: number) =>
+    request<SessionDetail>(`/api/sessions/${id}/queue/shuffle`, { method: 'POST' }),
   moveInQueue: (id: number, itemId: number, to_index: number) =>
     request<SessionDetail>(`/api/sessions/${id}/queue/${itemId}/move`, {
       method: 'POST',

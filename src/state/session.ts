@@ -97,6 +97,9 @@ export function useSessionControl() {
       [sessionId, queryClient],
     ),
     clear: wrap((id) => api.clearQueue(id)),
+    // Rebat ce qui suit le titre courant. La lecture n'est pas interrompue :
+    // le serveur ne touche ni au pointeur, ni a `command_seq`.
+    shuffle: wrap((id) => api.shuffleQueue(id)),
   }
 }
 
