@@ -212,8 +212,15 @@ function Queue({ entries, upcoming }: { entries: Entry[]; upcoming: number }) {
           {control.sessionId != null && upcoming >= 2 && (
             <>
               {' · '}
-              <button onClick={control.shuffle} className="hover:text-emerald-400">
-                Mélanger la suite
+              <button
+                onClick={control.shuffle}
+                title="Mélanger la suite"
+                aria-label="Mélanger la suite"
+                // `align-middle` : sans lui l'icone repose sur la ligne de
+                // base du texte et depasse sous les chiffres qui la precedent.
+                className="inline-flex align-middle text-neutral-400 hover:text-emerald-400"
+              >
+                <Icon path={ICONS.shuffle} className="h-4 w-4" />
               </button>
             </>
           )}

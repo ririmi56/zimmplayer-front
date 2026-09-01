@@ -65,8 +65,13 @@ export function QueuePanel({ onClose }: { onClose: () => void }) {
             {/* Rien a rebattre tant qu'il reste moins de deux titres apres
                 celui en cours : le bouton n'aurait aucun effet visible. */}
             {aSuivre >= 2 && (
-              <button onClick={control.shuffle} className="hover:text-emerald-400">
-                Mélanger la suite
+              <button
+                onClick={control.shuffle}
+                title="Mélanger la suite"
+                aria-label="Mélanger la suite"
+                className="text-neutral-400 hover:text-emerald-400"
+              >
+                <Icon path={ICONS.shuffle} className="h-4 w-4" />
               </button>
             )}
             <button onClick={control.clear} className="hover:text-red-400">
