@@ -13,10 +13,15 @@ export function AddToPlaylist({
   trackIds,
   albumId,
   className = '',
+  size = 'h-4 w-4',
 }: {
   trackIds?: number[]
   albumId?: number
   className?: string
+  /** Doit suivre celle du `LikeButton` voisin : les deux vont presque
+   *  toujours par paire, et deux icones de tailles differentes cote a cote se
+   *  voient tout de suite. */
+  size?: string
 }) {
   const queryClient = useQueryClient()
   const [ouvert, setOuvert] = useState(false)
@@ -61,14 +66,19 @@ export function AddToPlaylist({
   const modifiables = (playlists.data ?? []).filter((playlist) => playlist.can_edit)
 
   return (
-    <div ref={boite} className="relative shrink-0">
+    // `flex` et non un simple bloc : sans lui, le bouton qu'il contient est
+    // une boite en ligne, posee sur la ligne de base d'une ligne de texte de
+    // 20 px. L'enveloppe mesurait donc 21 px la ou le coeur voisin en fait
+    // 16, et les deux icones — presque toujours cote a cote — se retrouvaient
+    // decalees de 2,5 px. Mesure avant/apres, pas devinee.
+    <div ref={boite} className="relative flex shrink-0">
       <button
         onClick={() => setOuvert((etat) => !etat)}
         title={message ?? 'Ajouter à une playlist'}
         aria-label="Ajouter à une playlist"
         className={`${className} ${message ? 'text-emerald-400' : ''}`}
       >
-        <Icon path={ICONS.playlistAdd} className="h-4 w-4" />
+        <Icon path={ICONS.playlistAdd} className={size} />
       </button>
 
       {ouvert && (

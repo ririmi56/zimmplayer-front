@@ -99,6 +99,7 @@ export function NowPlaying() {
               />
               <AddToPlaylist
                 trackIds={[track.id]}
+                size="h-5 w-5"
                 className="mt-2 rounded-full border border-neutral-700 p-2 text-neutral-300 hover:border-neutral-500 hover:text-neutral-100"
               />
             </div>
