@@ -4,9 +4,15 @@ import { AlbumMenu } from './AlbumMenu'
 import { FavoriteButton } from './FavoriteButton'
 import { Cover } from './Cover'
 
-export function AlbumGrid({ albums }: { albums: Album[] }) {
+export function AlbumGrid({
+  albums,
+  emptyMessage = 'Aucun album.',
+}: {
+  albums: Album[]
+  emptyMessage?: string
+}) {
   if (albums.length === 0) {
-    return <p className="px-1 py-8 text-sm text-neutral-500">Aucun album.</p>
+    return <p className="px-1 py-8 text-sm text-neutral-500">{emptyMessage}</p>
   }
 
   return (
@@ -36,6 +42,7 @@ export function AlbumGrid({ albums }: { albums: Album[] }) {
           />
           <div className="truncate text-sm font-medium text-neutral-100">{album.title}</div>
           <div className="truncate text-xs text-neutral-500">
+            {album.release_type === 'single' ? 'Single · ' : ''}
             {album.year ? `${album.year} · ` : ''}
             {album.artist_name}
           </div>

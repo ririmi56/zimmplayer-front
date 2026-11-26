@@ -7,6 +7,7 @@ import {
   albumSearchParams,
   parseAlbumSort,
   parseFavoris,
+  parseReleaseType,
   parseReverse,
 } from '../components/albumSort'
 import { useInfiniteScroll } from '../components/useInfiniteScroll'
@@ -27,13 +28,21 @@ export function Library() {
   const sort = parseAlbumSort(params.get('tri'))
   const reverse = parseReverse(params.get('sens'))
   const favoris = parseFavoris(params.get('favoris'))
+  const releaseType = parseReleaseType(params.get('sortie'))
 
   const query = useInfiniteQuery({
     // `sort` dans la cle : sans lui, changer de tri reafficherait les pages
-    // deja en cache, triees a l'ancienne. Meme raison pour le filtre.
-    queryKey: ['albums', sort, reverse, favoris],
+    // deja en cache, triees a l'ancienne. Meme raison pour les filtres.
+    queryKey: ['albums', sort, reverse, favoris, releaseType],
     queryFn: ({ pageParam }) =>
-      api.albums({ sort, reverse, favoris, limit: PAGE_SIZE, offset: pageParam }),
+      api.albums({
+        sort,
+        reverse,
+        favoris,
+        releaseType,
+        limit: PAGE_SIZE,
+        offset: pageParam,
+      }),
     initialPageParam: 0,
     // `total` etant renvoye par chaque page, on sait s'arreter sans avoir a
     // deviner d'apres une page incomplete.
@@ -49,18 +58,44 @@ export function Library() {
 
   const albums = query.data?.pages.flatMap((page) => page.items) ?? []
   const total = query.data?.pages[0]?.total ?? 0
+  const label = releaseType === 'single' ? 'single' : 'album'
+  const labelPlural = releaseType === 'single' ? 'singles' : 'albums'
 
   return (
     <>
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-neutral-100">Bibliothèque</h1>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <span className="text-sm text-neutral-500">
-            {albums.length < total ? `${albums.length} sur ${total} albums` : `${total} albums`}
+            {albums.length < total
+              ? `${albums.length} sur ${total} ${labelPlural}`
+              : `${total} ${total > 1 ? labelPlural : label}`}
           </span>
+          {/* Albums et singles sont deux sorties distinctes : le filtre vit
+              dans l'URL, comme le tri, pour survivre a un aller-retour. */}
+          <div className="flex items-center rounded-full border border-neutral-700 p-0.5 text-sm">
+            {(['album', 'single'] as const).map((value) => (
+              <button
+                key={value}
+                onClick={() =>
+                  setParams(albumSearchParams(sort, reverse, favoris, value), { replace: true })
+                }
+                aria-pressed={releaseType === value}
+                className={`rounded-full px-3 py-1 transition ${
+                  releaseType === value
+                    ? 'bg-neutral-100 text-neutral-950'
+                    : 'text-neutral-400 hover:text-neutral-100'
+                }`}
+              >
+                {value === 'album' ? 'Albums' : 'Singles'}
+              </button>
+            ))}
+          </div>
           <button
             onClick={() =>
-              setParams(albumSearchParams(sort, reverse, !favoris), { replace: true })
+              setParams(albumSearchParams(sort, reverse, !favoris, releaseType), {
+                replace: true,
+              })
             }
             aria-pressed={favoris}
             title={favoris ? 'Afficher tout le catalogue' : 'N’afficher que mes favoris'}
@@ -79,15 +114,22 @@ export function Library() {
             value={sort}
             reverse={reverse}
             onChange={(next) =>
-              setParams(albumSearchParams(next, reverse, favoris), { replace: true })
+              setParams(albumSearchParams(next, reverse, favoris, releaseType), {
+                replace: true,
+              })
             }
             onToggleReverse={() =>
-              setParams(albumSearchParams(sort, !reverse, favoris), { replace: true })
+              setParams(albumSearchParams(sort, !reverse, favoris, releaseType), {
+                replace: true,
+              })
             }
           />
         </div>
       </header>
-      <AlbumGrid albums={albums} />
+      <AlbumGrid
+        albums={albums}
+        emptyMessage={releaseType === 'single' ? 'Aucun single.' : 'Aucun album.'}
+      />
       <div ref={sentinel} aria-hidden className="h-px" />
       {query.isFetchingNextPage && (
         <p className="py-6 text-center text-sm text-neutral-500">Chargement…</p>

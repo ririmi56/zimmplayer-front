@@ -73,9 +73,10 @@ export function Stats() {
         <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-neutral-400">
           Catalogue
         </h2>
-        <div className="grid max-w-4xl grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid max-w-4xl grid-cols-2 gap-3 sm:grid-cols-5">
           <Chiffre label="Titres" valeur={String(catalogue.tracks)} />
           <Chiffre label="Albums" valeur={String(catalogue.albums)} />
+          <Chiffre label="Singles" valeur={String(catalogue.singles ?? 0)} />
           <Chiffre label="Artistes" valeur={String(catalogue.artists)} />
           <Chiffre
             label="Durée totale"

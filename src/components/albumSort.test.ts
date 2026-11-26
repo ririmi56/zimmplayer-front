@@ -4,6 +4,7 @@ import {
   albumSearchParams,
   parseAlbumSort,
   parseFavoris,
+  parseReleaseType,
   parseReverse,
 } from './albumSort'
 
@@ -44,33 +45,54 @@ describe('parseFavoris', () => {
   })
 })
 
+describe('parseReleaseType', () => {
+  it('ne retient que le single, et retombe sur les albums sinon', () => {
+    expect(parseReleaseType('single')).toBe('single')
+    expect(parseReleaseType('album')).toBe('album')
+    expect(parseReleaseType(null)).toBe('album')
+    expect(parseReleaseType('')).toBe('album')
+    expect(parseReleaseType('Singles')).toBe('album')
+  })
+})
+
 describe('albumSearchParams', () => {
   it('n’écrit rien pour l’état par défaut', () => {
     // Sinon « / » deviendrait « /?tri=artiste » au premier affichage.
-    expect(albumSearchParams('artiste', false, false)).toEqual({})
+    expect(albumSearchParams('artiste', false, false, 'album')).toEqual({})
   })
 
   it('n’écrit que ce qui s’écarte du défaut', () => {
-    expect(albumSearchParams('titre', false, false)).toEqual({ tri: 'titre' })
-    expect(albumSearchParams('artiste', true, false)).toEqual({ sens: 'inverse' })
-    expect(albumSearchParams('annee', true, false)).toEqual({ tri: 'annee', sens: 'inverse' })
-    expect(albumSearchParams('artiste', false, true)).toEqual({ favoris: '1' })
+    expect(albumSearchParams('titre', false, false, 'album')).toEqual({ tri: 'titre' })
+    expect(albumSearchParams('artiste', true, false, 'album')).toEqual({ sens: 'inverse' })
+    expect(albumSearchParams('annee', true, false, 'album')).toEqual({
+      tri: 'annee',
+      sens: 'inverse',
+    })
+    expect(albumSearchParams('artiste', false, true, 'album')).toEqual({ favoris: '1' })
+    expect(albumSearchParams('artiste', false, false, 'single')).toEqual({ sortie: 'single' })
   })
 
   it('garde le filtre quand on change de tri', () => {
     // `setSearchParams` remplace toute la chaine : c'est ici qu'un filtre
     // oublie disparaitrait de l'URL au premier changement de tri.
-    expect(albumSearchParams('titre', false, true)).toEqual({ tri: 'titre', favoris: '1' })
+    expect(albumSearchParams('titre', false, true, 'single')).toEqual({
+      tri: 'titre',
+      favoris: '1',
+      sortie: 'single',
+    })
   })
 
   it('fait l’aller-retour avec les analyseurs', () => {
     for (const sort of ALBUM_SORTS) {
       for (const reverse of [false, true]) {
         for (const favoris of [false, true]) {
-          const params = albumSearchParams(sort.value, reverse, favoris)
-          expect(parseAlbumSort(params.tri ?? null)).toBe(sort.value)
-          expect(parseReverse(params.sens ?? null)).toBe(reverse)
-          expect(parseFavoris(params.favoris ?? null)).toBe(favoris)
+          for (const releaseType of ['album', 'single'] as const) {
+            const params = albumSearchParams(sort.value, reverse, favoris, releaseType)
+            expect(parseAlbumSort(params.tri ?? null)).toBe(sort.value)
+            expect(parseReverse(params.sens ?? null)).toBe(reverse)
+            expect(parseFavoris(params.favoris ?? null)).toBe(favoris)
+            expect(parseReleaseType(params.sortie ?? null)).toBe(releaseType)
+          }
         }
       }
     }

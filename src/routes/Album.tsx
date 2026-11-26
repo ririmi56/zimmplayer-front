@@ -33,6 +33,7 @@ export function Album() {
   if (!data) return null
 
   const totalSeconds = data.tracks.reduce((sum, t) => sum + (t.duration_s ?? 0), 0)
+  const isSingle = data.release_type === 'single'
 
   return (
     <>
@@ -53,6 +54,7 @@ export function Album() {
             <Link to={`/artists/${data.artist_id}`} className="hover:text-neutral-100 hover:underline">
               {data.artist_name}
             </Link>
+            {isSingle ? ' · Single' : ''}
             {data.year ? ` · ${data.year}` : ''} · {data.track_count} titre
             {data.track_count > 1 ? 's' : ''} · {formatDuration(totalSeconds)}
             {data.genre && (
@@ -77,7 +79,7 @@ export function Album() {
               disabled={data.tracks.length === 0 || playNowInSession.isPending}
               className="rounded-full bg-emerald-500 px-5 py-2 text-sm font-medium text-neutral-950 hover:bg-emerald-400 disabled:opacity-40"
             >
-              Lire l'album
+              {isSingle ? 'Lire le single' : "Lire l'album"}
             </button>
             {inSession && (
               <button

@@ -1,4 +1,4 @@
-import type { AlbumSort } from '../api/client'
+import type { AlbumSort, ReleaseType } from '../api/client'
 
 /**
  * Chaque tri porte son sens naturel : on parcourt un catalogue de A a Z, mais
@@ -45,24 +45,35 @@ export function parseFavoris(raw: string | null): boolean {
 }
 
 /**
- * Ce qu'il faut mettre dans l'URL pour ce tri, ce sens et ce filtre.
+ * Albums ou singles. Absent = albums : la bibliotheque montre d'abord les
+ * sorties completes, les singles ont leur propre vue.
+ */
+export function parseReleaseType(raw: string | null): ReleaseType {
+  return raw === 'single' ? 'single' : 'album'
+}
+
+/**
+ * Ce qu'il faut mettre dans l'URL pour ce tri, ce sens, ce filtre et ce type
+ * de sortie.
  *
  * L'etat par defaut ne s'ecrit pas : `/` doit rester `/`, sans `?tri=artiste`
  * accroche derriere. D'ou une fonction plutot qu'un objet monte a la main a
  * chaque appelant, qui finirait par oublier un des cas.
  *
- * Les trois sont exiges, sans valeur par defaut : `setSearchParams` REMPLACE
- * la chaine entiere, donc un appelant qui omettrait le filtre en changeant de
+ * Les quatre sont exiges, sans valeur par defaut : `setSearchParams` REMPLACE
+ * la chaine entiere, donc un appelant qui omettrait un filtre en changeant de
  * tri l'effacerait sans le vouloir.
  */
 export function albumSearchParams(
   sort: AlbumSort,
   reverse: boolean,
   favoris: boolean,
+  releaseType: ReleaseType,
 ): Record<string, string> {
   const params: Record<string, string> = {}
   if (sort !== 'artiste') params.tri = sort
   if (reverse) params.sens = 'inverse'
   if (favoris) params.favoris = '1'
+  if (releaseType !== 'album') params.sortie = releaseType
   return params
 }
