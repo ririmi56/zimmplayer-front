@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { AlbumGrid } from '../components/AlbumGrid'
 import { TrackList } from '../components/TrackList'
+import { splitReleases } from '../components/releases'
 
 export function Search() {
   const [params] = useSearchParams()
@@ -23,6 +24,10 @@ export function Search() {
   if (empty) {
     return <p className="text-sm text-neutral-500">Aucun résultat pour « {q} ».</p>
   }
+
+  // Le catalogue range les singles dans les albums ; l'ecran les separe pour
+  // que chaque single se lise comme une sortie, pas comme un album de plus.
+  const { albums, singles } = splitReleases(data.albums)
 
   return (
     <div className="space-y-10">
@@ -48,12 +53,21 @@ export function Search() {
         </section>
       )}
 
-      {data.albums.length > 0 && (
+      {albums.length > 0 && (
         <section>
           <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-neutral-400">
             Albums
           </h2>
-          <AlbumGrid albums={data.albums} />
+          <AlbumGrid albums={albums} />
+        </section>
+      )}
+
+      {singles.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-neutral-400">
+            Singles
+          </h2>
+          <AlbumGrid albums={singles} emptyMessage="Aucun single." />
         </section>
       )}
 

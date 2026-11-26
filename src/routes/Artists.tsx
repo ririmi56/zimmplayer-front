@@ -33,21 +33,31 @@ export function Artists() {
         </span>
       </header>
       <ul className="divide-y divide-neutral-800/60">
-        {artists.map((artist) => (
-          <li key={artist.id}>
-            <Link
-              to={`/artists/${artist.id}`}
-              className="flex items-baseline justify-between px-2 py-3 text-sm hover:bg-neutral-800/40"
-            >
-              <span className="text-neutral-100">{artist.name}</span>
-              <span className="text-xs text-neutral-500">
-                {artist.album_count > 0
-                  ? `${artist.album_count} album${artist.album_count > 1 ? 's' : ''}`
-                  : 'apparitions'}
-              </span>
-            </Link>
-          </li>
-        ))}
+        {artists.map((artist) => {
+          // Albums et singles sont deux sorties distinctes : on annonce les
+          // deux, et « apparitions » seulement quand il n'y a ni l'un ni l'autre.
+          const sorties = [
+            (artist.album_count ?? 0) > 0
+              ? `${artist.album_count} album${artist.album_count > 1 ? 's' : ''}`
+              : null,
+            (artist.single_count ?? 0) > 0
+              ? `${artist.single_count} single${artist.single_count > 1 ? 's' : ''}`
+              : null,
+          ].filter(Boolean)
+          return (
+            <li key={artist.id}>
+              <Link
+                to={`/artists/${artist.id}`}
+                className="flex items-baseline justify-between px-2 py-3 text-sm hover:bg-neutral-800/40"
+              >
+                <span className="text-neutral-100">{artist.name}</span>
+                <span className="text-xs text-neutral-500">
+                  {sorties.length > 0 ? sorties.join(' · ') : 'apparitions'}
+                </span>
+              </Link>
+            </li>
+          )
+        })}
       </ul>
       <div ref={sentinel} aria-hidden className="h-px" />
       {query.isFetchingNextPage && (

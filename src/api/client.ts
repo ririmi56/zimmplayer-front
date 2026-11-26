@@ -75,6 +75,9 @@ export type AlbumSort =
   | 'likes'
   | 'favoris'
 
+/** Type de sortie : un single est un album a part entiere dans le catalogue. */
+export type ReleaseType = 'album' | 'single'
+
 /** Pseudo courant, lu au moment de l'appel pour suivre les changements. */
 let userName = 'anonyme'
 export const setUserName = (name: string) => {
@@ -127,6 +130,8 @@ export const api = {
       q?: string
       artistId?: number
       genre?: string
+      /** Ne garder que les albums, ou que les singles. */
+      releaseType?: ReleaseType
       sort?: AlbumSort
       /** Retourne le sens naturel du tri, sans en changer la cle. */
       reverse?: boolean
@@ -141,6 +146,7 @@ export const api = {
     if (params.q) search.set('q', params.q)
     if (params.artistId) search.set('artist_id', String(params.artistId))
     if (params.genre) search.set('genre', params.genre)
+    if (params.releaseType) search.set('release_type', params.releaseType)
     if (params.sort) search.set('sort', params.sort)
     if (params.reverse) search.set('reverse', 'true')
     if (params.favoris) search.set('favoris', 'true')

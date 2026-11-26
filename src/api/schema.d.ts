@@ -1107,8 +1107,64 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Health */
+        /**
+         * Health
+         * @description Diagnostic humain : repond toujours 200, l'etat est dans le corps.
+         *
+         *     C'est la route documentee depuis toujours ; les orchestrateurs, eux,
+         *     utilisent /api/health/live et /api/health/ready, qui repondent par leur
+         *     code HTTP.
+         */
         get: operations["health_api_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/health/live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Live
+         * @description Le processus repond-il encore ?
+         *
+         *     Volontairement sans aucune dependance : une sonde de vivacite qui touche
+         *     la base ferait TUER l'API a chaque indisponibilite de MariaDB, alors que
+         *     le redemarrage n'y changerait rien — et le redemarrage en boucle
+         *     empecherait la reprise au retour de la base.
+         */
+        get: operations["live_api_health_live_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/health/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ready
+         * @description Peut-on lui envoyer du trafic ?
+         *
+         *     Presque toutes les routes lisent la base : sans elle, l'API repondrait des
+         *     erreurs a tout le monde. Un 503 la retire du service le temps que la base
+         *     revienne, sans que le processus soit tue.
+         */
+        get: operations["ready_api_health_ready_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1138,6 +1194,11 @@ export interface components {
             artist_id: number;
             /** Artist Name */
             artist_name: string;
+            /**
+             * Release Type
+             * @enum {string}
+             */
+            release_type: "album" | "single";
             /** Has Cover */
             has_cover: boolean;
             /**
@@ -1169,6 +1230,11 @@ export interface components {
             artist_id: number;
             /** Artist Name */
             artist_name: string;
+            /**
+             * Release Type
+             * @enum {string}
+             */
+            release_type: "album" | "single";
             /** Has Cover */
             has_cover: boolean;
             /**
@@ -1204,6 +1270,11 @@ export interface components {
              * @default 0
              */
             album_count: number;
+            /**
+             * Single Count
+             * @default 0
+             */
+            single_count: number;
             /** Albums */
             albums: components["schemas"]["AlbumOut"][];
             /** Appears On */
@@ -1220,6 +1291,11 @@ export interface components {
              * @default 0
              */
             album_count: number;
+            /**
+             * Single Count
+             * @default 0
+             */
+            single_count: number;
         };
         /**
          * AuthStatus
@@ -1251,6 +1327,8 @@ export interface components {
             tracks: number;
             /** Albums */
             albums: number;
+            /** Singles */
+            singles: number;
             /** Artists */
             artists: number;
             /** Total Seconds */
@@ -2018,6 +2096,7 @@ export interface operations {
                 q?: string | null;
                 artist_id?: number | null;
                 genre?: string | null;
+                release_type?: "album" | "single" | "all";
                 sort?: "artiste" | "titre" | "annee" | "ajout" | "genre" | "likes" | "favoris";
                 reverse?: boolean;
                 favoris?: boolean;
@@ -4030,6 +4109,50 @@ export interface operations {
         };
     };
     health_api_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+        };
+    };
+    live_api_health_live_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+        };
+    };
+    ready_api_health_ready_get: {
         parameters: {
             query?: never;
             header?: never;

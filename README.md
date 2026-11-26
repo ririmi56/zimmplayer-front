@@ -78,6 +78,26 @@ npm test
 npm run build
 ```
 
+## Albums et singles
+
+Le catalogue distingue deux types de sorties : les albums complets et les
+singles. Un single importé par zimmporter (`Artiste/Singles/Titre.m4a`) est
+présenté comme une sortie à part entière — son titre, sa pochette, sa page de
+détail et son favori — et non comme une piste d'un album « Singles » partagé.
+
+- **Bibliothèque** : un filtre **Albums / Singles** vit dans l'URL
+  (`?sortie=single`) et vaut Albums par défaut. Le tri et le filtre « Favoris »
+  s'appliquent aux deux.
+- **Page artiste** : deux sections, *Albums* et *Singles*.
+- **Recherche** : les résultats sont séparés de la même façon.
+- **Statistiques** : les albums et les singles sont comptés séparément.
+- Les cartes et la page d'un single portent la mention *Single*.
+
+Côté API, `GET /api/albums` accepte `release_type=album|single|all` ; sans
+paramètre, elle renvoie tout, ce qui garde un client ancien fonctionnel. Après
+une mise à jour depuis une version qui agrégeait les singles, un scan normal
+côté `zimmplayer-back` suffit à les séparer (voir le README du backend).
+
 ## Le navigateur comme client Snapcast
 
 En mode session, ce client est à la fois la télécommande de la file (API REST)
